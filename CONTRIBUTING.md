@@ -17,9 +17,9 @@ This guide explains how to work in this repository.
 > - **No AI listed as author or committer.** Commits are authored by the human
 >   contributor who is responsible for them.
 >
-> **CI enforces it:** the `Reject AI attribution` step of the required `Commit messages`
-> check fails the pull request if any commit or the PR title or description carries
-> AI attribution, so a PR with it cannot be merged.
+> **CI checks it:** the `Reject AI attribution` step of the `Commit messages` check
+> fails the pull request if any commit or the PR title or description carries AI
+> attribution, and a PR with a failing check must not be merged.
 >
 > This rule overrides any default attribution the tool adds on its own. If an AI
 > assistant prepares a commit or a pull request, remove the attribution before pushing.
@@ -31,9 +31,9 @@ This guide explains how to work in this repository.
 ## Branching strategy (Git Flow lite)
 
 ```
-main      ← production, protected
+main      ← production, PR only
   ↑ PR — merge commit
-develop   ← integration, protected
+develop   ← integration, PR only
   ↑ PR — squash
 feat/<description>   ← one branch per feature
 fix/<description>    ← one branch per bug fix
@@ -50,8 +50,8 @@ docs/<description>   ← documentation changes
 
 ### Merge policy
 
-The `main` and `develop` rulesets allow **both squash and merge commit**, so GitHub
-will offer both buttons. Which one to use is not optional; it depends on the PR:
+GitHub offers **both squash and merge commit** buttons on every pull request. Which one
+to use is not optional; it depends on the PR:
 
 | PR | Method | GitHub button |
 |----|--------|---------------|
@@ -123,7 +123,7 @@ git branch -d feat/short-description
 ## Commit convention
 
 We use [Conventional Commits](https://www.conventionalcommits.org/). CI validates every
-commit in a pull request, and the check is required to merge.
+commit in a pull request, and the check must be green before merging.
 
 ### Format
 
@@ -182,26 +182,33 @@ commit in a pull request, and the check is required to merge.
 
 ### Review and merge requirements
 
-What the branch rulesets enforce:
-
 | | `develop` | `main` |
 |---|---|---|
 | Changes only through a pull request | yes | yes |
-| Required check: `Commit messages` | yes | yes |
+| CI checks green (`Commit messages`, `Build and test`) | yes | yes |
 | Required approvals | 0 | 0 |
 | All review conversations resolved | no | yes |
-| Force push and branch deletion | blocked | blocked |
+| Force push and branch deletion | never | never |
 
-Approvals default to 0 so a solo maintainer can merge their own pull requests. For a
-team, raise `required_approving_review_count` in the rulesets to 1 or more.
+> [!NOTE]
+> **These rules are a convention, not enforced by GitHub.** The repository is private on
+> a GitHub Free plan, where branch rulesets and branch protection are not available, so
+> GitHub would accept a direct push. Follow the rules anyway. The CI checks still run on
+> every pull request. If the repository becomes public or moves to a paid plan, create
+> rulesets for `main` and `develop` that match this table.
+
+Approvals are 0 so a solo maintainer can merge their own pull requests. For a team,
+require 1 or more.
 
 ---
 
 ## FAQ
 
 **What if I commit to `main` by mistake?**
-Nothing breaks — `main` is protected and will reject the push. Move the commits to a
-new branch: `git branch fix/whatever && git reset --hard origin/main`.
+Do not push it. Move the commits to a new branch and reset `main`:
+`git branch fix/whatever && git reset --hard origin/main`. GitHub would not reject the
+push (see the note in [Review and merge requirements](#review-and-merge-requirements)),
+so check your branch before pushing.
 
 **Squash, merge or rebase?**
 Squash for feature PRs into `develop` (one clean commit per feature). Merge commit for
