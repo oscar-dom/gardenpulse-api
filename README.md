@@ -13,7 +13,7 @@ Node.js 22 · TypeScript · Express 5 · MongoDB + Mongoose · Zod · Vitest + S
 ### Prerequisites
 
 - Node.js 22 or later
-- A MongoDB instance (local, Docker or Atlas)
+- A free MongoDB Atlas cluster (step-by-step guide coming soon)
 
 ### Setup
 
