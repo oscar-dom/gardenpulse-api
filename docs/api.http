@@ -1,0 +1,18 @@
+# GardenPulse API — manual requests
+#
+# Open this file in VS Code with the REST Client extension (humao.rest-client)
+# and click "Send Request" above any request. Start the API first: npm run dev
+
+@baseUrl = http://localhost:3000/api
+
+### Health check → 200
+GET {{baseUrl}}/health
+
+### Unknown route → 404 NotFound
+GET {{baseUrl}}/does-not-exist
+
+### Malformed JSON body → 400 InvalidJSON
+POST {{baseUrl}}/health
+Content-Type: application/json
+
+{ "name":

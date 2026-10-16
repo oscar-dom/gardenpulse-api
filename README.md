@@ -29,6 +29,12 @@ The API listens on `http://localhost:3000` by default. Check it with:
 curl http://localhost:3000/api/health
 ```
 
+### Trying the API
+
+[`docs/api.http`](docs/api.http) contains ready-to-send requests for every endpoint.
+Open it in VS Code with the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client)
+extension and click **Send Request** above any request.
+
 ## Scripts
 
 | Script | Description |
