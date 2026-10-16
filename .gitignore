@@ -11,6 +11,7 @@ coverage/
 # Environment variables and secrets (NEVER COMMIT)
 # =====================================================================
 .env
+*.env
 .env.local
 .env.*.local
 .env.development
@@ -48,6 +49,8 @@ aws-credentials*
 .DS_Store
 Thumbs.db
 desktop.ini
+# Download metadata Windows attaches to files copied into WSL
+*:Zone.Identifier
 
 # =====================================================================
 # Editor swap and backup files
