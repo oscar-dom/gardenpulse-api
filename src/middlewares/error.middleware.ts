@@ -1,5 +1,5 @@
 import type { ErrorRequestHandler, Request, Response } from "express";
-import { AppError } from "../errors/app.error.js";
+import { AppError, ValidationError } from "../errors/app.error.js";
 
 // Catches any request that did not match a route.
 export const notFoundHandler = (req: Request, res: Response): void => {
@@ -12,6 +12,16 @@ export const notFoundHandler = (req: Request, res: Response): void => {
 
 // Turns every error into the same JSON shape. Must be registered last.
 export const globalErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  if (err instanceof ValidationError) {
+    res.status(400).json({
+      status: "fail",
+      error: err.name,
+      message: err.message,
+      details: err.details,
+    });
+    return;
+  }
+
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
       status: err.statusCode >= 500 ? "error" : "fail",
