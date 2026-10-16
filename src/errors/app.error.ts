@@ -23,3 +23,20 @@ export class AppError extends Error {
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
+
+export interface ValidationIssue {
+  location: "body" | "params" | "query";
+  field: string;
+  message: string;
+}
+
+/** Client input that does not match the expected schema (400). */
+export class ValidationError extends AppError {
+  public readonly details: ValidationIssue[];
+
+  constructor(details: ValidationIssue[]) {
+    super("The request data is not valid.", 400);
+    this.name = "ValidationError";
+    this.details = details;
+  }
+}
