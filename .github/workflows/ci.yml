@@ -1,14 +1,12 @@
 name: CI
 
-# Stack-agnostic on purpose: this workflow makes no assumptions about the
-# language, package manager or tooling the project will use. It only enforces
-# Conventional Commits, which applies to any repository. Add build, lint and test
-# jobs here once the project has a stack, and list their job `name:` values as
-# required status checks in the branch rulesets.
+# Two jobs: "Commit messages" enforces Conventional Commits and the no-AI-attribution
+# rule; "Build and test" type-checks, lints, checks formatting, runs the test suite
+# and compiles the project.
 #
-# The job `name:` below ("Commit messages") is the `context` required by the
-# rulesets. Renaming it without updating the rulesets blocks every pull request,
-# because a required check that never reports keeps the PR waiting forever.
+# The job `name:` values are the `context` required by the branch rulesets.
+# Renaming one without updating the rulesets blocks every pull request, because a
+# required check that never reports keeps the PR waiting forever.
 
 on:
   pull_request:
@@ -89,3 +87,34 @@ jobs:
             exit 1
           fi
           echo "No AI attribution found."
+
+  build-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build

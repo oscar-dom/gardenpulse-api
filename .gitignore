@@ -1,7 +1,11 @@
 # =====================================================================
-# Stack-agnostic baseline. Add the entries your language and tooling need
-# (dependency folders, build output, caches) once the project has a stack.
+# Node.js / TypeScript
 # =====================================================================
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.eslintcache
 
 # =====================================================================
 # Environment variables and secrets (NEVER COMMIT)
