@@ -4,9 +4,10 @@ name: CI
 # rule; "Build and test" type-checks, lints, checks formatting, runs the test suite
 # and compiles the project.
 #
-# The job `name:` values are the `context` required by the branch rulesets.
-# Renaming one without updating the rulesets blocks every pull request, because a
-# required check that never reports keeps the PR waiting forever.
+# If branch rulesets are enabled (public repository or paid plan), list these job
+# `name:` values as required checks. Renaming a job afterwards without updating the
+# rulesets blocks every pull request: a required check that never reports keeps the
+# PR waiting forever.
 
 on:
   pull_request:
