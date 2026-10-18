@@ -2,8 +2,20 @@
 #
 # Open this file in VS Code with the REST Client extension (humao.rest-client)
 # and click "Send Request" above any request. Start the API first: npm run dev
+#
+# The requests follow a typical session from top to bottom. Named requests save
+# values (tokens, ids) that later requests reuse, so run them in order:
+#   1. "Register a user" and "Log in as a user"   → {{token}} (role user)
+#   2. "Log in as the admin" (after npm run seed:admin) → {{adminToken}}
+#   3. "Create a sensor" → {{sensorId}}
 
 @baseUrl = http://localhost:3000/api
+
+# Must match ADMIN_EMAIL and ADMIN_PASSWORD in your .env
+@adminEmail = admin@example.com
+@adminPassword = change-me-admin-password
+
+### ===================== Health and errors =====================
 
 ### Health check → 200
 GET {{baseUrl}}/health
@@ -12,10 +24,12 @@ GET {{baseUrl}}/health
 GET {{baseUrl}}/does-not-exist
 
 ### Malformed JSON body → 400 InvalidJSON
-POST {{baseUrl}}/health
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
-{ "name":
+{ "email":
+
+### ===================== Sign up and log in =====================
 
 ### Register a user → 201 (a second run → 409 Conflict)
 POST {{baseUrl}}/auth/register
@@ -47,8 +61,7 @@ Content-Type: application/json
   "password": "short"
 }
 
-### Log in → 200 with a JWT (run "Register a user" first)
-# The token is saved as {{token}} for the protected requests below.
+### Log in as a user → 200 with a JWT, saved as {{token}}
 # @name login
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
@@ -58,7 +71,7 @@ Content-Type: application/json
   "password": "plain-secret-123"
 }
 
-@token = {{login.response.body.data.token}}
+@token = {{login.response.body.$.data.token}}
 
 ### Log in with a wrong password → 401 Unauthorized
 POST {{baseUrl}}/auth/login
@@ -69,57 +82,52 @@ Content-Type: application/json
   "password": "wrong-password"
 }
 
-### Current user → 200 (run "Log in" first)
+### Current user → 200
 GET {{baseUrl}}/auth/me
 Authorization: Bearer {{token}}
 
 ### Current user without a token → 401 Unauthorized
 GET {{baseUrl}}/auth/me
 
-### --- Admin requests (log in as an admin first: npm run seed:admin, then "Log in" with ADMIN_*) ---
+### Log in as the admin (run npm run seed:admin first) → token saved as {{adminToken}}
+# @name adminLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
 
-### Pending admin requests → 200 for an admin, 403 for a regular user
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+@adminToken = {{adminLogin.response.body.$.data.token}}
+
+### ===================== Admin requests (admin only) =====================
+
+### A regular user tries to list admin requests → 403 Forbidden
 GET {{baseUrl}}/users/admin-requests
 Authorization: Bearer {{token}}
 
-### Approve a request → 200, the user becomes admin (replace the id with one from the list)
-PATCH {{baseUrl}}/users/000000000000000000000000/admin-request
-Authorization: Bearer {{token}}
+### Pending admin requests → 200 (the first one is saved as {{pendingUserId}})
+# @name adminRequests
+GET {{baseUrl}}/users/admin-requests
+Authorization: Bearer {{adminToken}}
+
+@pendingUserId = {{adminRequests.response.body.$.data.users[0].id}}
+
+### Approve the first pending request → 200, the user becomes admin
+### (a second decision on the same user → 409 Conflict)
+PATCH {{baseUrl}}/users/{{pendingUserId}}/admin-request
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 { "decision": "approve" }
 
-### Reject a request → 200 (a second decision on the same user → 409 Conflict)
-PATCH {{baseUrl}}/users/000000000000000000000000/admin-request
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### ===================== Sensors =====================
 
-{ "decision": "reject" }
-
-### --- Sensors (any logged-in user can read the catalog) ---
-
-### List sensors → 200 with pagination metadata
-GET {{baseUrl}}/sensors?page=1&limit=10
-Authorization: Bearer {{token}}
-
-### Filter sensors by type and status
-GET {{baseUrl}}/sensors?type=soil_moisture&active=true
-Authorization: Bearer {{token}}
-
-### Invalid query → 400 listing every wrong parameter
-GET {{baseUrl}}/sensors?page=0&type=wind
-Authorization: Bearer {{token}}
-
-### Sensor detail → 200 (replace the id), 404 if it does not exist
-GET {{baseUrl}}/sensors/000000000000000000000000
-Authorization: Bearer {{token}}
-
-### --- Sensor management (admin token required; a regular user gets 403) ---
-
-### Create a sensor → 201 with a Location header
+### Create a sensor (admin) → 201 with a Location header; id saved as {{sensorId}}
 # @name createSensor
 POST {{baseUrl}}/sensors
-Authorization: Bearer {{token}}
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
@@ -130,35 +138,62 @@ Content-Type: application/json
   "thresholdDirection": "below"
 }
 
-@sensorId = {{createSensor.response.body.data.sensor.id}}
+@sensorId = {{createSensor.response.body.$.data.sensor.id}}
 
-### Create a sensor with invalid data → 400
+### Create another sensor (admin): temperature, anomalous above 35 °C
+POST {{baseUrl}}/sensors
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Greenhouse temperature",
+  "type": "temperature",
+  "location": "Greenhouse",
+  "threshold": 35
+}
+
+### A regular user tries to create a sensor → 403 Forbidden
 POST {{baseUrl}}/sensors
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
-{ "name": "", "type": "wind", "threshold": "high" }
+{
+  "name": "Not allowed",
+  "type": "light",
+  "location": "Bed 1",
+  "threshold": 1000
+}
 
-### Update a sensor → 200 (only the fields sent change; readings are re-evaluated
-### if threshold or thresholdDirection change)
-PATCH {{baseUrl}}/sensors/{{sensorId}}
-Authorization: Bearer {{token}}
+### Create a sensor with invalid data → 400 listing every field
+POST {{baseUrl}}/sensors
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
-{ "threshold": 20, "active": false }
+{ "name": "", "type": "wind", "threshold": "high" }
 
-### Delete a sensor → 204 if it has no readings; 409 if it has readings
-DELETE {{baseUrl}}/sensors/{{sensorId}}
+### List sensors (any logged-in user) → 200 with pagination metadata
+GET {{baseUrl}}/sensors?page=1&limit=10
 Authorization: Bearer {{token}}
 
-### Delete a sensor and all its readings → 204
-DELETE {{baseUrl}}/sensors/{{sensorId}}?cascade=true
+### Filter sensors by type and status
+GET {{baseUrl}}/sensors?type=soil_moisture&active=true
 Authorization: Bearer {{token}}
 
-### --- Readings (any logged-in user can record and read them) ---
-### Run "Create a sensor" first (threshold 25, direction below) to fill {{sensorId}}.
+### Invalid sensor query → 400 listing every wrong parameter
+GET {{baseUrl}}/sensors?page=0&type=wind
+Authorization: Bearer {{token}}
 
-### Record a normal reading → 201, anomalous: false
+### Sensor detail → 200
+GET {{baseUrl}}/sensors/{{sensorId}}
+Authorization: Bearer {{token}}
+
+### Sensor that does not exist → 404
+GET {{baseUrl}}/sensors/000000000000000000000000
+Authorization: Bearer {{token}}
+
+### ===================== Readings (any logged-in user) =====================
+
+### Record a normal reading → 201, anomalous: false; id saved as {{readingId}}
 # @name createReading
 POST {{baseUrl}}/sensors/{{sensorId}}/readings
 Authorization: Bearer {{token}}
@@ -166,14 +201,28 @@ Content-Type: application/json
 
 { "value": 31.5, "timestamp": "2026-10-18T10:00:00Z" }
 
-@readingId = {{createReading.response.body.data.reading.id}}
+@readingId = {{createReading.response.body.$.data.reading.id}}
 
-### Record an anomalous reading (below the threshold) → 201, anomalous: true
+### Record an anomalous reading (below the threshold of 25) → 201, anomalous: true
 POST {{baseUrl}}/sensors/{{sensorId}}/readings
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "value": 12, "timestamp": "2026-10-18T11:00:00Z" }
+
+### Record another anomalous reading → 201, anomalous: true
+POST {{baseUrl}}/sensors/{{sensorId}}/readings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": 18, "timestamp": "2026-10-18T12:00:00Z" }
+
+### Try to set the anomaly from the client → ignored, the server decides (false)
+POST {{baseUrl}}/sensors/{{sensorId}}/readings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": 40, "timestamp": "2026-10-18T13:00:00Z", "anomalous": true }
 
 ### Record a reading for a sensor that does not exist → 404
 POST {{baseUrl}}/sensors/000000000000000000000000/readings
@@ -182,7 +231,14 @@ Content-Type: application/json
 
 { "value": 12, "timestamp": "2026-10-18T11:00:00Z" }
 
-### Reading detail → 200
+### Reading with invalid data → 400 (value not a number, bad date)
+POST {{baseUrl}}/sensors/{{sensorId}}/readings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": "dry", "timestamp": "yesterday" }
+
+### Reading detail → 200 with its sensor and unit
 GET {{baseUrl}}/readings/{{readingId}}
 Authorization: Bearer {{token}}
 
@@ -191,8 +247,8 @@ GET {{baseUrl}}/readings
 Authorization: Bearer {{token}}
 
 ### Pagination + filters + sorting combined: anomalous soil moisture readings,
-### lowest value first, 5 per page
-GET {{baseUrl}}/readings?type=soil_moisture&anomalous=true&sort=value&page=1&limit=5
+### lowest value first, 1 per page (page 2 of 2)
+GET {{baseUrl}}/readings?type=soil_moisture&anomalous=true&sort=value&page=2&limit=1
 Authorization: Bearer {{token}}
 
 ### Readings of one sensor in a date range, oldest first
@@ -202,3 +258,38 @@ Authorization: Bearer {{token}}
 ### Invalid history query → 400 listing every wrong parameter
 GET {{baseUrl}}/readings?anomalous=maybe&sort=name&limit=0
 Authorization: Bearer {{token}}
+
+### ===================== Sensor updates and deletion (admin) =====================
+
+### Update the threshold → 200; the anomaly flag of existing readings is recalculated
+PATCH {{baseUrl}}/sensors/{{sensorId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "threshold": 15 }
+
+### A regular user tries to update a sensor → 403 Forbidden
+PATCH {{baseUrl}}/sensors/{{sensorId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Hacked" }
+
+### Change the type of a sensor with readings → 409 Conflict
+PATCH {{baseUrl}}/sensors/{{sensorId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "type": "temperature" }
+
+### Delete a sensor with readings → 409 Conflict (nothing is deleted)
+DELETE {{baseUrl}}/sensors/{{sensorId}}
+Authorization: Bearer {{adminToken}}
+
+### A regular user tries to delete a sensor → 403 Forbidden
+DELETE {{baseUrl}}/sensors/{{sensorId}}
+Authorization: Bearer {{token}}
+
+### Delete the sensor and all its readings → 204 No Content
+DELETE {{baseUrl}}/sensors/{{sensorId}}?cascade=true
+Authorization: Bearer {{adminToken}}
