@@ -75,3 +75,23 @@ Authorization: Bearer {{token}}
 
 ### Current user without a token → 401 Unauthorized
 GET {{baseUrl}}/auth/me
+
+### --- Admin requests (log in as an admin first: npm run seed:admin, then "Log in" with ADMIN_*) ---
+
+### Pending admin requests → 200 for an admin, 403 for a regular user
+GET {{baseUrl}}/users/admin-requests
+Authorization: Bearer {{token}}
+
+### Approve a request → 200, the user becomes admin (replace the id with one from the list)
+PATCH {{baseUrl}}/users/000000000000000000000000/admin-request
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "decision": "approve" }
+
+### Reject a request → 200 (a second decision on the same user → 409 Conflict)
+PATCH {{baseUrl}}/users/000000000000000000000000/admin-request
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "decision": "reject" }
