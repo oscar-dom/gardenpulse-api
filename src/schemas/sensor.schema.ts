@@ -46,3 +46,11 @@ export const updateSensorSchema = createSensorSchema
   });
 
 export type UpdateSensorInput = z.infer<typeof updateSensorSchema>;
+
+// DELETE ?cascade=true also removes the sensor's readings. Without it, a sensor with
+// readings is not deleted, so its history is never lost by accident.
+export const deleteSensorQuerySchema = z.object({
+  cascade: booleanQuerySchema("cascade").default(false),
+});
+
+export type DeleteSensorQuery = z.infer<typeof deleteSensorQuerySchema>;

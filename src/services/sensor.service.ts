@@ -3,6 +3,7 @@ import { ReadingModel } from "../models/reading.model.js";
 import { type Sensor, SensorModel } from "../models/sensor.model.js";
 import type {
   CreateSensorInput,
+  DeleteSensorQuery,
   ListSensorsQuery,
   UpdateSensorInput,
 } from "../schemas/sensor.schema.js";
@@ -59,4 +60,25 @@ export const updateSensor = async (id: string, changes: UpdateSensorInput) => {
 
   if (ruleChanged) await recalculateAnomalies(sensor._id, sensor);
   return sensor;
+};
+
+/**
+ * Deletes a sensor. If it has readings, the admin must choose: keep the history by
+ * deactivating the sensor (PATCH active: false), or delete everything with
+ * cascade. Readings are never left pointing to a sensor that no longer exists.
+ */
+export const deleteSensor = async (id: string, { cascade }: DeleteSensorQuery) => {
+  const sensor = await getSensorById(id);
+
+  const readingCount = await ReadingModel.countDocuments({ sensor: sensor._id });
+  if (readingCount > 0 && !cascade) {
+    throw new AppError(
+      `The sensor has ${readingCount} reading(s). Deactivate it to keep them ` +
+        "(PATCH active: false), or delete it with ?cascade=true to remove them too.",
+      409,
+    );
+  }
+
+  await ReadingModel.deleteMany({ sensor: sensor._id });
+  await sensor.deleteOne();
 };
