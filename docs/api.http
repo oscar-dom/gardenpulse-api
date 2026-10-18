@@ -95,3 +95,21 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "decision": "reject" }
+
+### --- Sensors (any logged-in user can read the catalog) ---
+
+### List sensors → 200 with pagination metadata
+GET {{baseUrl}}/sensors?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### Filter sensors by type and status
+GET {{baseUrl}}/sensors?type=soil_moisture&active=true
+Authorization: Bearer {{token}}
+
+### Invalid query → 400 listing every wrong parameter
+GET {{baseUrl}}/sensors?page=0&type=wind
+Authorization: Bearer {{token}}
+
+### Sensor detail → 200 (replace the id), 404 if it does not exist
+GET {{baseUrl}}/sensors/000000000000000000000000
+Authorization: Bearer {{token}}
