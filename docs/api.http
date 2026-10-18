@@ -46,3 +46,25 @@ Content-Type: application/json
   "email": "not-an-email",
   "password": "short"
 }
+
+### Log in → 200 with a JWT (run "Register a user" first)
+# The token is saved as {{token}} for the protected requests below.
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "ada@example.com",
+  "password": "plain-secret-123"
+}
+
+@token = {{login.response.body.data.token}}
+
+### Log in with a wrong password → 401 Unauthorized
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "ada@example.com",
+  "password": "wrong-password"
+}
