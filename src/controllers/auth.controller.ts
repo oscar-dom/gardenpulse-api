@@ -11,3 +11,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   const { user, token } = await loginUser(req.body as LoginInput);
   res.status(200).json({ status: "success", data: { token, user } });
 };
+
+// Only reached through `authenticate`, which guarantees `req.user`.
+export const me = (req: Request, res: Response): void => {
+  res.status(200).json({ status: "success", data: { user: req.user } });
+};
