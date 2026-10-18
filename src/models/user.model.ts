@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { type Model, model, Schema } from "mongoose";
+import { type HydratedDocument, type Model, model, Schema } from "mongoose";
 
 export const USER_ROLES = ["admin", "user"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -27,6 +27,7 @@ interface UserMethods {
 }
 
 type UserModelType = Model<User, object, UserMethods>;
+export type UserDocument = HydratedDocument<User, UserMethods>;
 
 const userSchema = new Schema<User, UserModelType, UserMethods>(
   {

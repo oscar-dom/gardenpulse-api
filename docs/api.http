@@ -68,3 +68,10 @@ Content-Type: application/json
   "email": "ada@example.com",
   "password": "wrong-password"
 }
+
+### Current user → 200 (run "Log in" first)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### Current user without a token → 401 Unauthorized
+GET {{baseUrl}}/auth/me
