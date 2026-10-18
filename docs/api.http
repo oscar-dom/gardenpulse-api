@@ -113,3 +113,28 @@ Authorization: Bearer {{token}}
 ### Sensor detail → 200 (replace the id), 404 if it does not exist
 GET {{baseUrl}}/sensors/000000000000000000000000
 Authorization: Bearer {{token}}
+
+### --- Sensor management (admin token required; a regular user gets 403) ---
+
+### Create a sensor → 201 with a Location header
+# @name createSensor
+POST {{baseUrl}}/sensors
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Tomato bed moisture",
+  "type": "soil_moisture",
+  "location": "Bed 3",
+  "threshold": 25,
+  "thresholdDirection": "below"
+}
+
+@sensorId = {{createSensor.response.body.data.sensor.id}}
+
+### Create a sensor with invalid data → 400
+POST {{baseUrl}}/sensors
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "", "type": "wind", "threshold": "high" }
