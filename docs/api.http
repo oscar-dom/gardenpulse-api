@@ -185,3 +185,20 @@ Content-Type: application/json
 ### Reading detail → 200
 GET {{baseUrl}}/readings/{{readingId}}
 Authorization: Bearer {{token}}
+
+### Reading history → newest first, 20 per page, with pagination metadata
+GET {{baseUrl}}/readings
+Authorization: Bearer {{token}}
+
+### Pagination + filters + sorting combined: anomalous soil moisture readings,
+### lowest value first, 5 per page
+GET {{baseUrl}}/readings?type=soil_moisture&anomalous=true&sort=value&page=1&limit=5
+Authorization: Bearer {{token}}
+
+### Readings of one sensor in a date range, oldest first
+GET {{baseUrl}}/readings?sensor={{sensorId}}&from=2026-10-18T00:00:00Z&to=2026-10-18T23:59:59Z&sort=timestamp
+Authorization: Bearer {{token}}
+
+### Invalid history query → 400 listing every wrong parameter
+GET {{baseUrl}}/readings?anomalous=maybe&sort=name&limit=0
+Authorization: Bearer {{token}}
