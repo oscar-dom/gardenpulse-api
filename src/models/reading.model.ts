@@ -1,12 +1,12 @@
 import { model, Schema, type Types } from "mongoose";
 
-// `unit` and `anomalous` are set by the server from the sensor, never by the client.
-// `anomalous` is stored (not computed per request) so the history can filter on it
-// cheaply; it is recalculated if the sensor's threshold changes.
+// The unit is not stored: it belongs to the sensor and is read from it, so readings
+// never duplicate sensor data. `anomalous` is set by the server, never by the client,
+// and stored (not computed per request) so the history can filter on it cheaply; it
+// is recalculated if the sensor's threshold changes.
 export interface Reading {
   sensor: Types.ObjectId;
   value: number;
-  unit: string;
   timestamp: Date;
   anomalous: boolean;
   createdAt: Date;
@@ -21,7 +21,6 @@ const readingSchema = new Schema<Reading>(
       required: [true, "sensor is required"],
     },
     value: { type: Number, required: [true, "value is required"] },
-    unit: { type: String, required: [true, "unit is required"] },
     // When the measurement was taken, which may differ from when it reached the API.
     timestamp: { type: Date, required: [true, "timestamp is required"] },
     anomalous: { type: Boolean, required: [true, "anomalous is required"] },

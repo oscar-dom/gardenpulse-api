@@ -27,7 +27,6 @@ describe("Reading model", () => {
   const validReading = () => ({
     sensor: new Types.ObjectId(),
     value: 25.5,
-    unit: "°C",
     timestamp: new Date("2026-10-18T10:00:00Z"),
     anomalous: false,
   });
@@ -46,7 +45,7 @@ describe("Reading model", () => {
     expect(error).toBeInstanceOf(MongooseError.ValidationError);
     const { errors } = error as MongooseError.ValidationError;
     expect(Object.keys(errors)).toEqual(
-      expect.arrayContaining(["sensor", "value", "unit", "timestamp", "anomalous"]),
+      expect.arrayContaining(["sensor", "value", "timestamp", "anomalous"]),
     );
   });
 
