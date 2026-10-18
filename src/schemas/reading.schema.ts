@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { booleanQuerySchema, objectIdSchema, paginationQuerySchema } from "./common.schema.js";
+import { sensorTypeSchema } from "./sensor.schema.js";
 
 // Readings may arrive a little late, but never from the future. A small margin
 // absorbs clock differences between the device and the server.
@@ -19,3 +21,30 @@ export const createReadingSchema = z.object({
 });
 
 export type CreateReadingInput = z.infer<typeof createReadingSchema>;
+
+// "-field" sorts descending. Newest first by default.
+export const READING_SORTS = ["-timestamp", "timestamp", "-value", "value"] as const;
+
+const dateQuery = (field: string) =>
+  z.iso
+    .datetime({ offset: true, error: `${field} must be an ISO 8601 date-time` })
+    .transform((value) => new Date(value));
+
+// Every filter is optional and they can all be combined with pagination and sorting.
+export const listReadingsQuerySchema = paginationQuerySchema
+  .extend({
+    sensor: objectIdSchema.optional(),
+    type: sensorTypeSchema.optional(),
+    anomalous: booleanQuerySchema("anomalous").optional(),
+    from: dateQuery("from").optional(),
+    to: dateQuery("to").optional(),
+    sort: z
+      .enum(READING_SORTS, { error: `sort must be one of: ${READING_SORTS.join(", ")}` })
+      .default("-timestamp"),
+  })
+  .refine(({ from, to }) => !from || !to || from <= to, {
+    error: "from must be before to",
+    path: ["from"],
+  });
+
+export type ListReadingsQuery = z.infer<typeof listReadingsQuerySchema>;
