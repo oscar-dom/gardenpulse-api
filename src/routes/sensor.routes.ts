@@ -1,9 +1,18 @@
 import { Router } from "express";
-import { getSensor, getSensors, postSensor } from "../controllers/sensor.controller.js";
+import {
+  getSensor,
+  getSensors,
+  patchSensor,
+  postSensor,
+} from "../controllers/sensor.controller.js";
 import { authenticate, authorize } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { idParamsSchema } from "../schemas/common.schema.js";
-import { createSensorSchema, listSensorsQuerySchema } from "../schemas/sensor.schema.js";
+import {
+  createSensorSchema,
+  listSensorsQuerySchema,
+  updateSensorSchema,
+} from "../schemas/sensor.schema.js";
 
 export const sensorRouter = Router();
 
@@ -16,3 +25,9 @@ sensorRouter.get("/:id", validate({ params: idParamsSchema }), getSensor);
 
 // Managing the catalog: admins only (403 for regular users).
 sensorRouter.post("/", authorize("admin"), validate({ body: createSensorSchema }), postSensor);
+sensorRouter.patch(
+  "/:id",
+  authorize("admin"),
+  validate({ params: idParamsSchema, body: updateSensorSchema }),
+  patchSensor,
+);

@@ -138,3 +138,11 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "name": "", "type": "wind", "threshold": "high" }
+
+### Update a sensor → 200 (only the fields sent change; readings are re-evaluated
+### if threshold or thresholdDirection change)
+PATCH {{baseUrl}}/sensors/{{sensorId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "threshold": 20, "active": false }
