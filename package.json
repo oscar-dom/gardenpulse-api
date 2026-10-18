@@ -17,7 +17,8 @@
     "format": "prettier --write \"**/*.{ts,js,json}\"",
     "format:check": "prettier --check \"**/*.{ts,js,json}\"",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed:admin": "tsx src/seed-admin.ts"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

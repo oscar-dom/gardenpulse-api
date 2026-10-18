@@ -20,8 +20,12 @@ Node.js 22 · TypeScript · Express 5 · MongoDB + Mongoose · Zod · Vitest + S
 ```bash
 npm install
 cp .env.example .env   # then edit the values
+npm run seed:admin     # creates the first admin from ADMIN_* in .env (once)
 npm run dev
 ```
+
+New accounts always get the `user` role. Someone can ask for the admin role when
+signing up (`"requestAdmin": true`), and an existing admin approves or rejects the request.
 
 The API listens on `http://localhost:3000` by default. Check it with:
 
@@ -42,6 +46,7 @@ extension and click **Send Request** above any request.
 | `npm run dev` | Start the server in watch mode |
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm start` | Run the compiled server |
+| `npm run seed:admin` | Create the first admin account from `.env` (safe to rerun) |
 | `npm test` | Run the test suite |
 | `npm run typecheck` | Type-check without emitting |
 | `npm run lint` | Lint with ESLint |
@@ -53,6 +58,7 @@ extension and click **Send Request** above any request.
 src/
 ├── app.ts          # Express app (middlewares, routes); does not start the server
 ├── server.ts       # connects to MongoDB and starts the server
+├── seed-admin.ts   # creates the first admin (npm run seed:admin)
 ├── config/         # environment variables and database connection
 ├── errors/         # application error class
 ├── schemas/        # Zod input validation schemas
