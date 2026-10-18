@@ -4,12 +4,14 @@ import {
   getSensors,
   patchSensor,
   postSensor,
+  removeSensor,
 } from "../controllers/sensor.controller.js";
 import { authenticate, authorize } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { idParamsSchema } from "../schemas/common.schema.js";
 import {
   createSensorSchema,
+  deleteSensorQuerySchema,
   listSensorsQuerySchema,
   updateSensorSchema,
 } from "../schemas/sensor.schema.js";
@@ -30,4 +32,10 @@ sensorRouter.patch(
   authorize("admin"),
   validate({ params: idParamsSchema, body: updateSensorSchema }),
   patchSensor,
+);
+sensorRouter.delete(
+  "/:id",
+  authorize("admin"),
+  validate({ params: idParamsSchema, query: deleteSensorQuerySchema }),
+  removeSensor,
 );

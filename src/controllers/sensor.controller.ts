@@ -1,11 +1,13 @@
 import type { Request, Response } from "express";
 import type {
   CreateSensorInput,
+  DeleteSensorQuery,
   ListSensorsQuery,
   UpdateSensorInput,
 } from "../schemas/sensor.schema.js";
 import {
   createSensor,
+  deleteSensor,
   getSensorById,
   listSensors,
   updateSensor,
@@ -33,4 +35,10 @@ export const postSensor = async (req: Request, res: Response): Promise<void> => 
 export const patchSensor = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
   const sensor = await updateSensor(req.params.id, req.body as UpdateSensorInput);
   res.status(200).json({ status: "success", data: { sensor } });
+};
+
+// 204 No Content: the sensor is gone, so there is nothing to send back.
+export const removeSensor = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
+  await deleteSensor(req.params.id, req.query as unknown as DeleteSensorQuery);
+  res.status(204).end();
 };

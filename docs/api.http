@@ -146,3 +146,11 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "threshold": 20, "active": false }
+
+### Delete a sensor → 204 if it has no readings; 409 if it has readings
+DELETE {{baseUrl}}/sensors/{{sensorId}}
+Authorization: Bearer {{token}}
+
+### Delete a sensor and all its readings → 204
+DELETE {{baseUrl}}/sensors/{{sensorId}}?cascade=true
+Authorization: Bearer {{token}}
