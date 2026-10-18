@@ -16,3 +16,33 @@ POST {{baseUrl}}/health
 Content-Type: application/json
 
 { "name":
+
+### Register a user → 201 (a second run → 409 Conflict)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Ada Gardener",
+  "email": "ada@example.com",
+  "password": "plain-secret-123"
+}
+
+### Register asking for the admin role → 201, role "user" with adminRequest "pending"
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Grace Planter",
+  "email": "grace@example.com",
+  "password": "plain-secret-123",
+  "requestAdmin": true
+}
+
+### Register with invalid data → 400 ValidationError listing every field
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": "short"
+}
