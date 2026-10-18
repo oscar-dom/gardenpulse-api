@@ -1,6 +1,6 @@
 import { AppError } from "../errors/app.error.js";
 import { type Sensor, SensorModel } from "../models/sensor.model.js";
-import type { ListSensorsQuery } from "../schemas/sensor.schema.js";
+import type { CreateSensorInput, ListSensorsQuery } from "../schemas/sensor.schema.js";
 import { buildPaginationMeta, skipFor } from "./pagination.service.js";
 
 /** One page of the sensor catalog, optionally filtered by type and status. */
@@ -22,3 +22,5 @@ export const getSensorById = async (id: string) => {
   if (!sensor) throw new AppError("Sensor not found.", 404);
   return sensor;
 };
+
+export const createSensor = (input: CreateSensorInput) => SensorModel.create(input);
