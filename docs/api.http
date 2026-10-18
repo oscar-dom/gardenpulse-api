@@ -154,3 +154,34 @@ Authorization: Bearer {{token}}
 ### Delete a sensor and all its readings → 204
 DELETE {{baseUrl}}/sensors/{{sensorId}}?cascade=true
 Authorization: Bearer {{token}}
+
+### --- Readings (any logged-in user can record and read them) ---
+### Run "Create a sensor" first (threshold 25, direction below) to fill {{sensorId}}.
+
+### Record a normal reading → 201, anomalous: false
+# @name createReading
+POST {{baseUrl}}/sensors/{{sensorId}}/readings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": 31.5, "timestamp": "2026-10-18T10:00:00Z" }
+
+@readingId = {{createReading.response.body.data.reading.id}}
+
+### Record an anomalous reading (below the threshold) → 201, anomalous: true
+POST {{baseUrl}}/sensors/{{sensorId}}/readings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": 12, "timestamp": "2026-10-18T11:00:00Z" }
+
+### Record a reading for a sensor that does not exist → 404
+POST {{baseUrl}}/sensors/000000000000000000000000/readings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "value": 12, "timestamp": "2026-10-18T11:00:00Z" }
+
+### Reading detail → 200
+GET {{baseUrl}}/readings/{{readingId}}
+Authorization: Bearer {{token}}
