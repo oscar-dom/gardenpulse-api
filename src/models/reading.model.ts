@@ -28,10 +28,15 @@ const readingSchema = new Schema<Reading>(
   {
     timestamps: true,
     toJSON: {
-      // Expose `id` instead of Mongo's `_id` and hide the internal `__v`.
+      // Expose `id` instead of Mongo's `_id` and hide the internal `__v`. When the
+      // sensor is populated, its unit is also shown next to the value for clarity
+      // (read from the sensor, not stored in the reading).
       transform: (_doc, ret) => {
         const { _id, __v: _version, ...rest } = ret;
-        return { id: String(_id), ...rest };
+        const sensor: unknown = rest.sensor;
+        const unit =
+          sensor && typeof sensor === "object" && "unit" in sensor ? sensor.unit : undefined;
+        return { id: String(_id), ...rest, ...(unit !== undefined && { unit }) };
       },
     },
   },
