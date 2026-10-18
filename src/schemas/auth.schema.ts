@@ -28,3 +28,12 @@ export const registerSchema = z.object({
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+// Login only checks that both fields are present: the length rules apply when a
+// password is chosen, and a wrong password is simply a failed login.
+export const loginSchema = z.object({
+  email: z.string({ error: "email is required" }).trim().toLowerCase().min(1, "email is required"),
+  password: z.string({ error: "password is required" }).min(1, "password is required"),
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;

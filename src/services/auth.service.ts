@@ -1,7 +1,8 @@
 import { mongo } from "mongoose";
 import { AppError } from "../errors/app.error.js";
 import { UserModel } from "../models/user.model.js";
-import type { RegisterInput } from "../schemas/auth.schema.js";
+import type { LoginInput, RegisterInput } from "../schemas/auth.schema.js";
+import { signToken } from "./token.service.js";
 
 const DUPLICATE_KEY = 11000;
 
@@ -23,4 +24,18 @@ export const registerUser = async ({ requestAdmin, ...data }: RegisterInput) => 
     }
     throw error;
   }
+};
+
+/**
+ * Checks the credentials and returns the user with a signed token. An unknown email
+ * and a wrong password give the same 401, so the response does not reveal which
+ * emails are registered.
+ */
+export const loginUser = async ({ email, password }: LoginInput) => {
+  const user = await UserModel.findOne({ email }).select("+password");
+  if (!user || !(await user.comparePassword(password))) {
+    throw new AppError("Invalid email or password.", 401);
+  }
+
+  return { user, token: signToken(user.id) };
 };
