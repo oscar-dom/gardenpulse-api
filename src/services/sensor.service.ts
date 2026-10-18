@@ -1,6 +1,12 @@
 import { AppError } from "../errors/app.error.js";
+import { ReadingModel } from "../models/reading.model.js";
 import { type Sensor, SensorModel } from "../models/sensor.model.js";
-import type { CreateSensorInput, ListSensorsQuery } from "../schemas/sensor.schema.js";
+import type {
+  CreateSensorInput,
+  ListSensorsQuery,
+  UpdateSensorInput,
+} from "../schemas/sensor.schema.js";
+import { recalculateAnomalies } from "./anomaly.service.js";
 import { buildPaginationMeta, skipFor } from "./pagination.service.js";
 
 /** One page of the sensor catalog, optionally filtered by type and status. */
@@ -24,3 +30,33 @@ export const getSensorById = async (id: string) => {
 };
 
 export const createSensor = (input: CreateSensorInput) => SensorModel.create(input);
+
+/**
+ * Applies a partial update. Changing the type is only allowed while the sensor has
+ * no readings: it changes the unit, and old values would become meaningless. When
+ * the threshold or its direction changes, existing readings are re-evaluated.
+ */
+export const updateSensor = async (id: string, changes: UpdateSensorInput) => {
+  const sensor = await getSensorById(id);
+
+  if (changes.type && changes.type !== sensor.type) {
+    const hasReadings = await ReadingModel.exists({ sensor: sensor._id });
+    if (hasReadings) {
+      throw new AppError(
+        "The type of a sensor with readings cannot change. Create a new sensor instead.",
+        409,
+      );
+    }
+  }
+
+  const ruleChanged =
+    (changes.threshold !== undefined && changes.threshold !== sensor.threshold) ||
+    (changes.thresholdDirection !== undefined &&
+      changes.thresholdDirection !== sensor.thresholdDirection);
+
+  sensor.set(changes);
+  await sensor.save();
+
+  if (ruleChanged) await recalculateAnomalies(sensor._id, sensor);
+  return sensor;
+};

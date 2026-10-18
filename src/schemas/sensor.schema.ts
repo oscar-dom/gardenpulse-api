@@ -37,3 +37,12 @@ export const createSensorSchema = z.object({
 });
 
 export type CreateSensorInput = z.infer<typeof createSensorSchema>;
+
+// PATCH: any subset of the creation fields, but at least one.
+export const updateSensorSchema = createSensorSchema
+  .partial()
+  .refine((body) => Object.values(body).some((value) => value !== undefined), {
+    error: "send at least one field to update",
+  });
+
+export type UpdateSensorInput = z.infer<typeof updateSensorSchema>;
