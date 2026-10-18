@@ -33,6 +33,13 @@ The API listens on `http://localhost:3000` by default. Check it with:
 curl http://localhost:3000/api/health
 ```
 
+### API documentation
+
+With the server running, open **http://localhost:3000/api/docs** for the interactive
+OpenAPI documentation (Swagger UI). Log in with `POST /auth/login`, click **Authorize**
+and paste the token to try the protected endpoints. The raw spec is at
+`/api/docs/openapi.json`.
+
 ### Trying the API
 
 [`docs/api.http`](docs/api.http) contains ready-to-send requests for every endpoint.
@@ -63,7 +70,7 @@ src/
 ├── errors/         # application error class
 ├── schemas/        # Zod input validation schemas
 ├── middlewares/    # authentication, authorization, validation, error handling
-├── docs/           # OpenAPI specification
+├── docs/           # OpenAPI specification (openapi.json, served at /api/docs)
 ├── routes/
 ├── controllers/
 ├── services/
