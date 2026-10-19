@@ -242,7 +242,7 @@ Content-Type: application/json
 GET {{baseUrl}}/readings/{{readingId}}
 Authorization: Bearer {{token}}
 
-### Reading history → newest first, 20 per page, with pagination metadata
+### Reading history → newest first, 10 per page, with pagination metadata and next/prev links
 GET {{baseUrl}}/readings
 Authorization: Bearer {{token}}
 

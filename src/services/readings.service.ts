@@ -4,7 +4,7 @@ import { type Reading, ReadingModel } from "../models/reading.model.js";
 import { SensorModel } from "../models/sensor.model.js";
 import type { CreateReadingInput, ListReadingsQuery } from "../schemas/reading.schema.js";
 import { isAnomalous } from "./anomaly.service.js";
-import { buildPaginationMeta, skipFor } from "./pagination.service.js";
+import { skipFor } from "./pagination.service.js";
 import { getSensorById } from "./sensors.service.js";
 
 // Sensor fields shown with each reading: enough to read it without a second request.
@@ -69,5 +69,5 @@ export const listReadings = async (query: ListReadingsQuery) => {
     ReadingModel.countDocuments(filter),
   ]);
 
-  return { readings, meta: buildPaginationMeta({ page, limit }, total) };
+  return { readings, total };
 };

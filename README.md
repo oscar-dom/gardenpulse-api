@@ -152,8 +152,9 @@ extension and click **Send Request** above each request. Set `@adminEmail` and
 
 // Paginated list
 { "status": "success", "data": { "readings": [] },
-  "meta": { "page": 1, "limit": 20, "totalItems": 57, "totalPages": 3,
-            "hasNextPage": true, "hasPrevPage": false } }
+  "meta": { "total": 45, "page": 1, "limit": 10, "totalPages": 5,
+            "hasNextPage": true, "hasPrevPage": false,
+            "next": "?page=2&limit=10", "prev": null } }
 
 // Error (4xx → "fail", 5xx → "error")
 { "status": "fail", "error": "Forbidden",

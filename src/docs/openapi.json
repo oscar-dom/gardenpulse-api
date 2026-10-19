@@ -1028,11 +1028,11 @@
       "Limit": {
         "name": "limit",
         "in": "query",
+        "description": "Items per page. A value above 50 is lowered to 50.",
         "schema": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 100,
-          "default": 20
+          "default": 10
         }
       }
     },
@@ -1319,21 +1319,23 @@
       "PaginationMeta": {
         "type": "object",
         "properties": {
+          "total": {
+            "type": "integer",
+            "description": "Items that match the filters, in all pages.",
+            "example": 45
+          },
           "page": {
             "type": "integer",
-            "example": 1
+            "example": 2
           },
           "limit": {
             "type": "integer",
-            "example": 20
-          },
-          "totalItems": {
-            "type": "integer",
-            "example": 57
+            "example": 10
           },
           "totalPages": {
             "type": "integer",
-            "example": 3
+            "description": "At least 1, even when the list is empty.",
+            "example": 5
           },
           "hasNextPage": {
             "type": "boolean",
@@ -1341,10 +1343,31 @@
           },
           "hasPrevPage": {
             "type": "boolean",
-            "example": false
+            "example": true
+          },
+          "next": {
+            "type": "string",
+            "nullable": true,
+            "description": "Query string of the next page, keeping the filters and sorting; null on the last page.",
+            "example": "?type=temperature&page=3&limit=10"
+          },
+          "prev": {
+            "type": "string",
+            "nullable": true,
+            "description": "Query string of the previous page; null on the first page.",
+            "example": "?type=temperature&page=1&limit=10"
           }
         },
-        "required": ["page", "limit", "totalItems", "totalPages", "hasNextPage", "hasPrevPage"]
+        "required": [
+          "total",
+          "page",
+          "limit",
+          "totalPages",
+          "hasNextPage",
+          "hasPrevPage",
+          "next",
+          "prev"
+        ]
       },
       "Error": {
         "type": "object",

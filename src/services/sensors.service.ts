@@ -8,7 +8,7 @@ import type {
   UpdateSensorInput,
 } from "../schemas/sensor.schema.js";
 import { recalculateAnomalies } from "./anomaly.service.js";
-import { buildPaginationMeta, skipFor } from "./pagination.service.js";
+import { skipFor } from "./pagination.service.js";
 
 /** One page of the sensor catalog, optionally filtered by type and status. */
 export const listSensors = async ({ page, limit, type, active }: ListSensorsQuery) => {
@@ -21,7 +21,7 @@ export const listSensors = async ({ page, limit, type, active }: ListSensorsQuer
     SensorModel.countDocuments(filter),
   ]);
 
-  return { sensors, meta: buildPaginationMeta({ page, limit }, total) };
+  return { sensors, total };
 };
 
 export const getSensorById = async (id: string) => {

@@ -55,7 +55,7 @@ describe("GET /api/readings", () => {
       unit: "°C",
       sensor: { id: temperatureId, type: "temperature" },
     });
-    expect(res.body.meta).toMatchObject({ page: 1, totalItems: 6, totalPages: 1 });
+    expect(res.body.meta).toMatchObject({ total: 6, page: 1, limit: 10, totalPages: 1 });
   });
 
   it("filters by sensor", async () => {
@@ -96,15 +96,24 @@ describe("GET /api/readings", () => {
 
     expect(values(page1)).toEqual([36, 40]);
     expect(page1.body.meta).toEqual({
+      total: 3,
       page: 1,
       limit: 2,
-      totalItems: 3,
       totalPages: 2,
       hasNextPage: true,
       hasPrevPage: false,
+      // The links keep the filters and sorting of the request.
+      next: "?anomalous=true&sort=value&limit=2&page=2",
+      prev: null,
     });
     expect(values(page2)).toEqual([50]);
-    expect(page2.body.meta).toMatchObject({ page: 2, hasNextPage: false, hasPrevPage: true });
+    expect(page2.body.meta).toMatchObject({
+      page: 2,
+      hasNextPage: false,
+      hasPrevPage: true,
+      next: null,
+      prev: "?anomalous=true&sort=value&limit=2&page=1",
+    });
   });
 
   it("returns an empty page when the sensor and type do not match", async () => {
@@ -112,7 +121,13 @@ describe("GET /api/readings", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.readings).toEqual([]);
-    expect(res.body.meta).toMatchObject({ totalItems: 0, totalPages: 0, hasNextPage: false });
+    // An empty list is still one page, so there is no link to a page 0.
+    expect(res.body.meta).toMatchObject({
+      total: 0,
+      totalPages: 1,
+      hasNextPage: false,
+      next: null,
+    });
   });
 
   it("responds 400 for invalid query parameters", async () => {

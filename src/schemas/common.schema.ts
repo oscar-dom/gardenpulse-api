@@ -8,9 +8,11 @@ export const objectIdSchema = z
 
 export const idParamsSchema = z.object({ id: objectIdSchema });
 
-export const MAX_PAGE_SIZE = 100;
+export const DEFAULT_PAGE_SIZE = 10;
+export const MAX_PAGE_SIZE = 50;
 
 // Query strings are always text, so numbers are coerced before checking them.
+// A limit above the maximum is lowered to it, so a client cannot ask for everything.
 export const paginationQuerySchema = z.object({
   page: z.coerce
     .number("page must be a number")
@@ -21,8 +23,8 @@ export const paginationQuerySchema = z.object({
     .number("limit must be a number")
     .int("limit must be a whole number")
     .min(1, "limit must be at least 1")
-    .max(MAX_PAGE_SIZE, `limit must be at most ${MAX_PAGE_SIZE}`)
-    .default(20),
+    .default(DEFAULT_PAGE_SIZE)
+    .transform((limit) => Math.min(limit, MAX_PAGE_SIZE)),
 });
 
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>;

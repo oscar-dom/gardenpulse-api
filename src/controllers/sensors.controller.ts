@@ -12,9 +12,12 @@ import {
   listSensors,
   updateSensor,
 } from "../services/sensors.service.js";
+import { buildPaginationMeta } from "../services/pagination.service.js";
 
 export const getSensors = async (req: Request, res: Response): Promise<void> => {
-  const { sensors, meta } = await listSensors(req.query as unknown as ListSensorsQuery);
+  const query = req.query as unknown as ListSensorsQuery;
+  const { sensors, total } = await listSensors(query);
+  const meta = buildPaginationMeta(query, total, req.originalUrl);
   res.status(200).json({ status: "success", data: { sensors }, meta });
 };
 
