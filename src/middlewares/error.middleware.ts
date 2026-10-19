@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler, Request, Response } from "express";
+import { env } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { AppError, ValidationError } from "../errors/app.error.js";
 
@@ -42,11 +43,13 @@ export const globalErrorHandler: ErrorRequestHandler = (err, _req, res, _next) =
     return;
   }
 
-  // Unexpected error: log it, but never leak internals to the client.
+  // Unexpected error: log it. Only in development does the response show the stack
+  // trace, to help debugging; elsewhere internals never reach the client.
   logger.error({ err }, "Unhandled error");
   res.status(500).json({
     status: "error",
     error: "InternalServerError",
     message: "An unexpected error occurred.",
+    ...(env.NODE_ENV === "development" && { stack: (err as Error)?.stack }),
   });
 };

@@ -66,7 +66,7 @@ Edit `.env`:
 | `JWT_SECRET` | Random string of 32+ characters. Generate one with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
 | `JWT_EXPIRES_IN` | Token lifetime, e.g. `1h` (default) |
 | `PORT` | HTTP port, `3000` by default |
-| `NODE_ENV` | `development` (default), `test` or `production` |
+| `NODE_ENV` | `development` (default), `test` or `production`. Only in `development` do 500 responses include the stack trace: use `production` when deploying |
 | `CORS_ORIGIN` | Origin of the web client allowed to call the API, `http://localhost:5173` by default |
 | `LOG_LEVEL` | Minimum log level: `fatal`, `error`, `warn`, `info` (default), `debug`, `trace` or `silent` |
 | `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | First admin account, used only by `npm run seed:admin` |
