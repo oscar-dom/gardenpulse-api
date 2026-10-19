@@ -8,12 +8,13 @@ when it crosses the sensor's threshold.
 - Two roles: **admin** manages the sensor catalog, **user** reads sensors and records readings.
 - Reading history with pagination, filters (sensor, type, anomaly, dates) and sorting, all combinable.
 - Consistent JSON responses and validation errors that name every wrong field.
+- Security headers (helmet), CORS, rate limiting and structured logs (pino).
 - Interactive OpenAPI documentation and integration tests.
 
 ## Tech stack
 
 Node.js 22 · TypeScript · Express 5 · MongoDB Atlas + Mongoose · Zod · JWT · bcrypt ·
-Swagger UI · Vitest + Supertest
+helmet · cors · express-rate-limit · pino · Swagger UI · Vitest + Supertest
 
 ## Getting started
 
@@ -66,6 +67,8 @@ Edit `.env`:
 | `JWT_EXPIRES_IN` | Token lifetime, e.g. `1h` (default) |
 | `PORT` | HTTP port, `3000` by default |
 | `NODE_ENV` | `development` (default), `test` or `production` |
+| `CORS_ORIGIN` | Origin of the web client allowed to call the API, `http://localhost:5173` by default |
+| `LOG_LEVEL` | Minimum log level: `fatal`, `error`, `warn`, `info` (default), `debug`, `trace` or `silent` |
 | `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | First admin account, used only by `npm run seed:admin` |
 
 If a variable is missing or invalid, the server stops at startup and says which one.
@@ -163,7 +166,8 @@ extension and click **Send Request** above each request. Set `@adminEmail` and
 
 Status codes: `200` OK · `201` created (with a `Location` header) · `204` deleted ·
 `400` invalid input · `401` not logged in · `403` role not allowed · `404` not found ·
-`409` conflict with the current state.
+`409` conflict with the current state · `429` too many requests (more than 100 per IP
+in 15 minutes).
 
 ## Tests
 
@@ -198,10 +202,10 @@ src/
 ├── app.ts          # Express app (middlewares, routes); does not start the server
 ├── server.ts       # connects to MongoDB and starts the server
 ├── seed-admin.ts   # creates the first admin (npm run seed:admin)
-├── config/         # environment variables and database connection
+├── config/         # environment variables, database connection and logger
 ├── errors/         # application error class
 ├── schemas/        # Zod input validation schemas
-├── middlewares/    # authentication, authorization, validation, error handling
+├── middlewares/    # authentication, authorization, validation, rate limit, errors
 ├── docs/           # OpenAPI specification (openapi.json, served at /api/docs)
 ├── routes/         # URL → middlewares → controller
 ├── controllers/    # HTTP in/out: read the request, send the response

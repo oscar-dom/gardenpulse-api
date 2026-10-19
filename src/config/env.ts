@@ -11,6 +11,8 @@ const envSchema = z.object({
     .string({ error: "JWT_SECRET is required" })
     .min(32, "JWT_SECRET must be at least 32 characters long"),
   JWT_EXPIRES_IN: z.string().min(1).default("1h"),
+  CORS_ORIGIN: z.string().min(1).default("http://localhost:5173"),
+  LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
 });
 
 export type Env = z.infer<typeof envSchema>;

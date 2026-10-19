@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { env } from "./config/env.js";
 import { connectDB, disconnectDB } from "./config/database.js";
+import { logger } from "./config/logger.js";
 import { registerSchema } from "./schemas/auth.schema.js";
 import { ensureAdmin } from "./services/admin.service.js";
 
@@ -17,15 +18,16 @@ const seed = async (): Promise<void> => {
   });
 
   if (!parsed.success) {
-    console.error("Invalid admin settings (ADMIN_NAME, ADMIN_EMAIL, ADMIN_PASSWORD):");
-    console.error(z.prettifyError(parsed.error));
+    logger.fatal(
+      `Invalid admin settings (ADMIN_NAME, ADMIN_EMAIL, ADMIN_PASSWORD):\n${z.prettifyError(parsed.error)}`,
+    );
     process.exit(1);
   }
 
   await connectDB(env.MONGODB_URI);
   try {
     const { created, user } = await ensureAdmin(parsed.data);
-    console.log(
+    logger.info(
       created
         ? `Admin created: ${user.email}`
         : `A user with email ${user.email} already exists (role: ${user.role}). Nothing changed.`,
@@ -36,6 +38,6 @@ const seed = async (): Promise<void> => {
 };
 
 seed().catch((error: unknown) => {
-  console.error("Could not seed the admin:", error);
+  logger.fatal({ err: error }, "Could not seed the admin");
   process.exit(1);
 });
