@@ -8,9 +8,9 @@ import { globalErrorHandler, notFoundHandler } from "./middlewares/error.middlew
 import { globalLimiter } from "./middlewares/rateLimit.middleware.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { healthRouter } from "./routes/health.routes.js";
-import { readingRouter } from "./routes/reading.routes.js";
-import { sensorRouter } from "./routes/sensor.routes.js";
-import { userRouter } from "./routes/user.routes.js";
+import { readingsRouter } from "./routes/readings.routes.js";
+import { sensorsRouter } from "./routes/sensors.routes.js";
+import { usersRouter } from "./routes/users.routes.js";
 
 export const app = express();
 
@@ -34,9 +34,9 @@ app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapiSpec));
 
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
-app.use("/api/users", userRouter);
-app.use("/api/sensors", sensorRouter);
-app.use("/api/readings", readingRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/sensors", sensorsRouter);
+app.use("/api/readings", readingsRouter);
 
 // Always last, in this order.
 app.use(notFoundHandler);
