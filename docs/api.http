@@ -15,6 +15,15 @@
 @adminEmail = admin@example.com
 @adminPassword = change-me-admin-password
 
+# Values taken from earlier responses. They are defined here, at the top, because a
+# variable line placed under a request would be sent as part of that request's body.
+# Each one is filled in once the request that produces it has been sent.
+@token = {{login.response.body.$.data.token}}
+@adminToken = {{adminLogin.response.body.$.data.token}}
+@pendingUserId = {{adminRequests.response.body.$.data.users[0].id}}
+@sensorId = {{createSensor.response.body.$.data.sensor.id}}
+@readingId = {{createReading.response.body.$.data.reading.id}}
+
 ### ===================== Health and errors =====================
 
 ### Health check → 200
@@ -71,7 +80,6 @@ Content-Type: application/json
   "password": "plain-secret-123"
 }
 
-@token = {{login.response.body.$.data.token}}
 
 ### Log in with a wrong password → 401 InvalidCredentials
 POST {{baseUrl}}/auth/login
@@ -99,7 +107,6 @@ Content-Type: application/json
   "password": "{{adminPassword}}"
 }
 
-@adminToken = {{adminLogin.response.body.$.data.token}}
 
 ### ===================== Admin requests (admin only) =====================
 
@@ -112,7 +119,6 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/users/admin-requests
 Authorization: Bearer {{adminToken}}
 
-@pendingUserId = {{adminRequests.response.body.$.data.users[0].id}}
 
 ### Approve the first pending request → 200, the user becomes admin
 ### (a second decision on the same user → 409 Conflict)
@@ -138,7 +144,6 @@ Content-Type: application/json
   "thresholdDirection": "below"
 }
 
-@sensorId = {{createSensor.response.body.$.data.sensor.id}}
 
 ### Create another sensor (admin): temperature, anomalous above 35 °C
 POST {{baseUrl}}/sensors
@@ -201,7 +206,6 @@ Content-Type: application/json
 
 { "value": 31.5, "timestamp": "2026-10-18T10:00:00Z" }
 
-@readingId = {{createReading.response.body.$.data.reading.id}}
 
 ### Record an anomalous reading (below the threshold of 25) → 201, anomalous: true
 POST {{baseUrl}}/sensors/{{sensorId}}/readings
