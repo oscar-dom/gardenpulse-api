@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler, Request, Response } from "express";
+import { logger } from "../config/logger.js";
 import { AppError, ValidationError } from "../errors/app.error.js";
 
 // Catches any request that did not match a route.
@@ -42,7 +43,7 @@ export const globalErrorHandler: ErrorRequestHandler = (err, _req, res, _next) =
   }
 
   // Unexpected error: log it, but never leak internals to the client.
-  console.error("Unhandled error:", err);
+  logger.error({ err }, "Unhandled error");
   res.status(500).json({
     status: "error",
     error: "InternalServerError",

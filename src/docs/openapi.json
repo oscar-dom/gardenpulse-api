@@ -3,7 +3,7 @@
   "info": {
     "title": "GardenPulse API",
     "version": "1.0.0",
-    "description": "REST API to monitor a vegetable garden: sensors, their readings and the users who manage them.\n\n**Authentication:** log in with `POST /auth/login`, then click **Authorize** and paste the token. Every sensor and reading operation requires it.\n\n**Roles:** `admin` manages the sensor catalog and reviews admin requests; `user` can read sensors and record and read readings.\n\n**Responses** share one envelope: `status` is `success` (2xx), `fail` (4xx, client error) or `error` (5xx). Errors carry `error` (a short code) and `message`; validation errors add `details` with one entry per invalid field."
+    "description": "REST API to monitor a vegetable garden: sensors, their readings and the users who manage them.\n\n**Authentication:** log in with `POST /auth/login`, then click **Authorize** and paste the token. Every sensor and reading operation requires it.\n\n**Roles:** `admin` manages the sensor catalog and reviews admin requests; `user` can read sensors and record and read readings.\n\n**Responses** share one envelope: `status` is `success` (2xx), `fail` (4xx, client error) or `error` (5xx). Errors carry `error` (a short code) and `message`; validation errors add `details` with one entry per invalid field.\n\n**Rate limit:** each IP may send 100 requests every 15 minutes; after that the API answers `429 TooManyRequests`. The `RateLimit-*` headers show the remaining quota."
   },
   "servers": [
     {
@@ -65,6 +65,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -128,6 +131,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -198,6 +204,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -240,6 +249,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -289,6 +301,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -369,6 +384,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -444,6 +462,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -516,6 +537,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -569,6 +593,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -643,6 +670,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -691,6 +721,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -777,6 +810,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -890,6 +926,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -943,6 +982,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -1403,6 +1445,21 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "More than 100 requests from this IP in 15 minutes.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "fail",
+              "error": "TooManyRequests",
+              "message": "Too many requests. Try again in 15 minutes."
             }
           }
         }

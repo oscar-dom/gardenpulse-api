@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
+import { logger } from "./logger.js";
 
 export const connectDB = async (uri: string): Promise<void> => {
   await mongoose.connect(uri);
-  console.log(`MongoDB connected: ${mongoose.connection.host}/${mongoose.connection.name}`);
+  logger.info(`MongoDB connected: ${mongoose.connection.host}/${mongoose.connection.name}`);
 };
 
 export const disconnectDB = async (): Promise<void> => {

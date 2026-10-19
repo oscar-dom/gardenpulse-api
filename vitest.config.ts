@@ -12,6 +12,8 @@ export default defineConfig({
       MONGODB_URI: "mongodb://localhost:27017/gardenpulse-test",
       JWT_SECRET: "test-secret-that-is-at-least-32-characters-long",
       JWT_EXPIRES_IN: "1h",
+      CORS_ORIGIN: "http://localhost:5173",
+      LOG_LEVEL: "silent",
     },
   },
 });
