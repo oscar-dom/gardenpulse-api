@@ -6,17 +6,21 @@ import { signToken } from "./token.service.js";
 
 const DUPLICATE_KEY = 11000;
 
-/** Creates a regular user. A request for admin is stored as pending, never granted. */
+/**
+ * Creates a regular user and returns it with a signed token, so the client is logged in
+ * right away. A request for admin is stored as pending, never granted.
+ */
 export const registerUser = async ({ requestAdmin, ...data }: RegisterInput) => {
   const emailTaken = await UserModel.exists({ email: data.email });
   if (emailTaken) throw new EmailAlreadyRegisteredError();
 
   try {
-    return await UserModel.create({
+    const user = await UserModel.create({
       ...data,
       role: "user",
       ...(requestAdmin && { adminRequest: "pending" }),
     });
+    return { user, token: signToken(user.id) };
   } catch (error) {
     // Two sign-ups with the same email at once: the unique index catches the second.
     if (error instanceof mongo.MongoServerError && error.code === DUPLICATE_KEY) {

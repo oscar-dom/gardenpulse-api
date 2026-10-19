@@ -3,8 +3,8 @@ import type { LoginInput, RegisterInput } from "../schemas/auth.schema.js";
 import { loginUser, registerUser } from "../services/auth.service.js";
 
 export const register = async (req: Request, res: Response): Promise<void> => {
-  const user = await registerUser(req.body as RegisterInput);
-  res.status(201).json({ status: "success", data: { user } });
+  const { user, token } = await registerUser(req.body as RegisterInput);
+  res.status(201).json({ status: "success", data: { token, user } });
 };
 
 export const login = async (req: Request, res: Response): Promise<void> => {

@@ -29,6 +29,17 @@ describe("POST /api/auth/register", () => {
     expect(res.body.data.user).not.toHaveProperty("adminRequest");
   });
 
+  it("returns a token that already works, so no login is needed", async () => {
+    const res = await register(newUser);
+
+    expect(res.body.data.token).toEqual(expect.any(String));
+    const me = await request(app)
+      .get("/api/auth/me")
+      .set("Authorization", `Bearer ${res.body.data.token}`);
+    expect(me.status).toBe(200);
+    expect(me.body.data.user.id).toBe(res.body.data.user.id);
+  });
+
   it("stores an admin request as pending without granting the role", async () => {
     const res = await register({ ...newUser, requestAdmin: true });
 
