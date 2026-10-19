@@ -90,12 +90,14 @@ describe("Admin requests", () => {
       const { auth } = await createUserWithToken("admin");
 
       const unknown = await decide(new Types.ObjectId().toString(), auth, "approve");
-      const invalid = await decide("not-an-id", auth, "maybe");
+      const invalidId = await decide("not-an-id", auth, "approve");
+      const invalidDecision = await decide(new Types.ObjectId().toString(), auth, "maybe");
 
       expect(unknown.status).toBe(404);
-      expect(invalid.status).toBe(400);
-      const fields = invalid.body.details.map((issue: { field: string }) => issue.field);
-      expect(fields).toEqual(["id", "decision"]);
+      expect(invalidId.status).toBe(400);
+      expect(invalidId.body.details[0].field).toBe("id");
+      expect(invalidDecision.status).toBe(400);
+      expect(invalidDecision.body.details[0].field).toBe("decision");
     });
 
     it("responds 403 to a regular user", async () => {

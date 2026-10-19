@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { Types } from "mongoose";
 import request from "supertest";
 import { app } from "../../src/app.js";
-import { authenticate, authorize } from "../../src/middlewares/auth.middleware.js";
+import { authenticateToken, authorizeRoles } from "../../src/middlewares/auth.middleware.js";
 import { globalErrorHandler } from "../../src/middlewares/error.middleware.js";
 import { UserModel } from "../../src/models/user.model.js";
 import { signToken } from "../../src/services/token.service.js";
@@ -15,7 +15,7 @@ const secret = process.env.JWT_SECRET!;
 
 // A throwaway admin-only route, until the real admin endpoints exist.
 const testApp = express();
-testApp.get("/admin-only", authenticate, authorize("admin"), (_req, res) => {
+testApp.get("/admin-only", authenticateToken, authorizeRoles("admin"), (_req, res) => {
   res.status(200).json({ status: "success" });
 });
 testApp.use(globalErrorHandler);
@@ -28,7 +28,7 @@ const createUser = (role: "admin" | "user" = "user") =>
     role,
   });
 
-describe("authenticate (GET /api/auth/me)", () => {
+describe("authenticateToken (GET /api/auth/me)", () => {
   it("returns the logged-in user for a valid token", async () => {
     const user = await createUser();
 
@@ -80,7 +80,7 @@ describe("authenticate (GET /api/auth/me)", () => {
   });
 });
 
-describe("authorize", () => {
+describe("authorizeRoles", () => {
   it("lets an admin through", async () => {
     const admin = await createUser("admin");
 

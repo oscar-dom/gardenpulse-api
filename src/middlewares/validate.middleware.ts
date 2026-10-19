@@ -1,62 +1,47 @@
-import type { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, RequestHandler, Response } from "express";
 import type { ZodType } from "zod";
-import { ValidationError, type ValidationIssue } from "../errors/app.error.js";
+import { ValidationError } from "../errors/app.error.js";
 
-interface RequestSchemas {
-  body?: ZodType;
-  params?: ZodType;
-  query?: ZodType;
-}
-
-type Location = keyof RequestSchemas;
-const LOCATIONS: Location[] = ["params", "query", "body"];
+type Location = "body" | "params" | "query";
 
 /**
- * Validates and parses the request parts that have a schema. On success the parsed
- * values (trimmed, coerced, with defaults) replace the raw ones; on failure it reports
- * every invalid field at once as a 400 ValidationError.
+ * Validates and parses one part of the request. On success the parsed value (trimmed,
+ * coerced, with defaults) replaces the raw one; on failure it reports every invalid
+ * field of that part at once as a 400 ValidationError.
  */
-export const validate =
-  (schemas: RequestSchemas) =>
+const validateRequest =
+  (location: Location) =>
+  (schema: ZodType): RequestHandler =>
   (req: Request, _res: Response, next: NextFunction): void => {
-    const issues: ValidationIssue[] = [];
-    const parsed: Partial<Record<Location, unknown>> = {};
-
-    for (const location of LOCATIONS) {
-      const schema = schemas[location];
-      if (!schema) continue;
-
-      const result = schema.safeParse(req[location]);
-      if (result.success) {
-        parsed[location] = result.data;
-      } else {
-        for (const issue of result.error.issues) {
-          issues.push({
+    const result = schema.safeParse(req[location]);
+    if (!result.success) {
+      next(
+        new ValidationError(
+          result.error.issues.map((issue) => ({
             location,
             field: issue.path.map(String).join("."),
             message: issue.message,
-          });
-        }
-      }
-    }
-
-    if (issues.length > 0) {
-      next(new ValidationError(issues));
+          })),
+        ),
+      );
       return;
     }
 
-    if ("body" in parsed) req.body = parsed.body;
-    if ("params" in parsed) req.params = parsed.params as Request["params"];
-    // Express 5 exposes req.query through a getter, so it cannot be assigned:
-    // shadow it with an own property holding the parsed value instead.
-    if ("query" in parsed) {
+    if (location === "query") {
+      // Express 5 exposes req.query through a getter, so it cannot be assigned:
+      // shadow it with an own property holding the parsed value instead.
       Object.defineProperty(req, "query", {
-        value: parsed.query,
+        value: result.data,
         writable: true,
         enumerable: true,
         configurable: true,
       });
+    } else {
+      req[location] = result.data as Request[typeof location];
     }
-
     next();
   };
+
+export const validateBody = validateRequest("body");
+export const validateQuery = validateRequest("query");
+export const validateParams = validateRequest("params");
