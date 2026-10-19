@@ -1,6 +1,7 @@
 import express from "express";
 import request from "supertest";
 import { app } from "../../src/app.js";
+import { env } from "../../src/config/env.js";
 import { AppError } from "../../src/errors/app.error.js";
 import { globalErrorHandler } from "../../src/middlewares/error.middleware.js";
 
@@ -45,8 +46,6 @@ describe("Error handling", () => {
     });
 
     it("responds 500 without leaking details for an unexpected error", async () => {
-      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-
       const res = await request(failingApp).get("/crash");
 
       expect(res.status).toBe(500);
@@ -56,7 +55,20 @@ describe("Error handling", () => {
         message: "An unexpected error occurred.",
       });
       expect(JSON.stringify(res.body)).not.toContain("hunter2");
-      spy.mockRestore();
+    });
+
+    it("adds the stack trace to a 500 only in development", async () => {
+      const original = env.NODE_ENV;
+      env.NODE_ENV = "development";
+      try {
+        const res = await request(failingApp).get("/crash");
+
+        expect(res.status).toBe(500);
+        expect(res.body.error).toBe("InternalServerError");
+        expect(res.body.stack).toContain("Error: database password is hunter2");
+      } finally {
+        env.NODE_ENV = original;
+      }
     });
   });
 });
