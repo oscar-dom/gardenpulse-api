@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { isValidObjectId } from "mongoose";
-import { AppError } from "../errors/app.error.js";
+import { ForbiddenError, InvalidTokenError, UnauthorizedError } from "../errors/auth.errors.js";
 import { type UserRole, UserModel } from "../models/user.model.js";
 import { verifyToken } from "../services/token.service.js";
 
@@ -16,7 +16,7 @@ export const authenticateToken = async (
 ): Promise<void> => {
   const [scheme, token] = req.headers.authorization?.split(" ") ?? [];
   if (scheme !== "Bearer" || !token) {
-    throw new AppError("Authentication required. Send a Bearer token.", 401);
+    throw new UnauthorizedError();
   }
 
   let userId: string;
@@ -24,14 +24,14 @@ export const authenticateToken = async (
     userId = verifyToken(token).sub;
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      throw new AppError("The token has expired. Log in again.", 401);
+      throw new InvalidTokenError("The token has expired. Log in again.");
     }
-    throw new AppError("The token is not valid.", 401);
+    throw new InvalidTokenError();
   }
 
   // Loaded on every request so role changes and deleted accounts apply at once.
   const user = isValidObjectId(userId) ? await UserModel.findById(userId) : null;
-  if (!user) throw new AppError("The user for this token no longer exists.", 401);
+  if (!user) throw new InvalidTokenError("The user for this token no longer exists.");
 
   req.user = user;
   next();
@@ -43,9 +43,9 @@ export const authenticateToken = async (
 export const authorizeRoles =
   (...roles: UserRole[]) =>
   (req: Request, _res: Response, next: NextFunction): void => {
-    if (!req.user) throw new AppError("Authentication required. Send a Bearer token.", 401);
+    if (!req.user) throw new UnauthorizedError();
     if (!roles.includes(req.user.role)) {
-      throw new AppError("You do not have permission to perform this action.", 403);
+      throw new ForbiddenError();
     }
     next();
   };

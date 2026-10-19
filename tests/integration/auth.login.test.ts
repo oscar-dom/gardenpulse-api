@@ -36,7 +36,7 @@ describe("POST /api/auth/login", () => {
       expect(res.status).toBe(401);
       expect(res.body).toEqual({
         status: "fail",
-        error: "Unauthorized",
+        error: "InvalidCredentials",
         message: "Invalid email or password.",
       });
     }

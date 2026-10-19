@@ -42,20 +42,31 @@ describe("authenticateToken (GET /api/auth/me)", () => {
   });
 
   it.each([
-    ["no Authorization header", undefined, "Authentication required. Send a Bearer token."],
-    ["a non-Bearer scheme", "Basic abc123", "Authentication required. Send a Bearer token."],
-    ["a malformed token", "Bearer not-a-jwt", "The token is not valid."],
+    [
+      "no Authorization header",
+      undefined,
+      "Unauthorized",
+      "Authentication required. Send a Bearer token.",
+    ],
+    [
+      "a non-Bearer scheme",
+      "Basic abc123",
+      "Unauthorized",
+      "Authentication required. Send a Bearer token.",
+    ],
+    ["a malformed token", "Bearer not-a-jwt", "InvalidToken", "The token is not valid."],
     [
       "a token signed with another secret",
       `Bearer ${jwt.sign({ sub: new Types.ObjectId().toString() }, "another-secret-that-is-long-enough")}`,
+      "InvalidToken",
       "The token is not valid.",
     ],
-  ])("responds 401 for %s", async (_case, header, message) => {
+  ])("responds 401 for %s", async (_case, header, error, message) => {
     const req = request(app).get("/api/auth/me");
     const res = await (header ? req.set("Authorization", header) : req);
 
     expect(res.status).toBe(401);
-    expect(res.body).toEqual({ status: "fail", error: "Unauthorized", message });
+    expect(res.body).toEqual({ status: "fail", error, message });
   });
 
   it("responds 401 for an expired token", async () => {
@@ -65,6 +76,7 @@ describe("authenticateToken (GET /api/auth/me)", () => {
     const res = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${expired}`);
 
     expect(res.status).toBe(401);
+    expect(res.body.error).toBe("InvalidToken");
     expect(res.body.message).toBe("The token has expired. Log in again.");
   });
 
@@ -76,6 +88,7 @@ describe("authenticateToken (GET /api/auth/me)", () => {
     const res = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${token}`);
 
     expect(res.status).toBe(401);
+    expect(res.body.error).toBe("InvalidToken");
     expect(res.body.message).toBe("The user for this token no longer exists.");
   });
 });

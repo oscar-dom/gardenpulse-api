@@ -1,5 +1,5 @@
 import { mongo } from "mongoose";
-import { AppError } from "../errors/app.error.js";
+import { EmailAlreadyRegisteredError, InvalidCredentialsError } from "../errors/auth.errors.js";
 import { UserModel } from "../models/user.model.js";
 import type { LoginInput, RegisterInput } from "../schemas/auth.schema.js";
 import { signToken } from "./token.service.js";
@@ -9,7 +9,7 @@ const DUPLICATE_KEY = 11000;
 /** Creates a regular user. A request for admin is stored as pending, never granted. */
 export const registerUser = async ({ requestAdmin, ...data }: RegisterInput) => {
   const emailTaken = await UserModel.exists({ email: data.email });
-  if (emailTaken) throw new AppError("Email is already registered.", 409);
+  if (emailTaken) throw new EmailAlreadyRegisteredError();
 
   try {
     return await UserModel.create({
@@ -20,7 +20,7 @@ export const registerUser = async ({ requestAdmin, ...data }: RegisterInput) => 
   } catch (error) {
     // Two sign-ups with the same email at once: the unique index catches the second.
     if (error instanceof mongo.MongoServerError && error.code === DUPLICATE_KEY) {
-      throw new AppError("Email is already registered.", 409);
+      throw new EmailAlreadyRegisteredError();
     }
     throw error;
   }
@@ -34,7 +34,7 @@ export const registerUser = async ({ requestAdmin, ...data }: RegisterInput) => 
 export const loginUser = async ({ email, password }: LoginInput) => {
   const user = await UserModel.findOne({ email }).select("+password");
   if (!user || !(await user.comparePassword(password))) {
-    throw new AppError("Invalid email or password.", 401);
+    throw new InvalidCredentialsError();
   }
 
   return { user, token: signToken(user.id) };

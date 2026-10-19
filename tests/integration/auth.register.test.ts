@@ -50,7 +50,11 @@ describe("POST /api/auth/register", () => {
     const res = await register({ ...newUser, email: "ADA@example.com" });
 
     expect(res.status).toBe(409);
-    expect(res.body).toMatchObject({ status: "fail", error: "Conflict" });
+    expect(res.body).toEqual({
+      status: "fail",
+      error: "EmailAlreadyRegistered",
+      message: "Email is already registered.",
+    });
     expect(await UserModel.countDocuments()).toBe(1);
   });
 
