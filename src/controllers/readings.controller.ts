@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import type { CreateReadingInput, ListReadingsQuery } from "../schemas/reading.schema.js";
-import { createReading, getReadingById, listReadings } from "../services/reading.service.js";
+import { createReading, getReadingById, listReadings } from "../services/readings.service.js";
 
 export const postReading = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
   const reading = await createReading(req.params.id, req.body as CreateReadingInput);

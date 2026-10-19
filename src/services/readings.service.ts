@@ -5,7 +5,7 @@ import { SensorModel } from "../models/sensor.model.js";
 import type { CreateReadingInput, ListReadingsQuery } from "../schemas/reading.schema.js";
 import { isAnomalous } from "./anomaly.service.js";
 import { buildPaginationMeta, skipFor } from "./pagination.service.js";
-import { getSensorById } from "./sensor.service.js";
+import { getSensorById } from "./sensors.service.js";
 
 // Sensor fields shown with each reading: enough to read it without a second request.
 export const SENSOR_SUMMARY_FIELDS = "name type unit location";

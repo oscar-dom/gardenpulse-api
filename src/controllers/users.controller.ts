@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import type { AdminRequestDecision } from "../schemas/user.schema.js";
-import { decideAdminRequest, listPendingAdminRequests } from "../services/user.service.js";
+import { decideAdminRequest, listPendingAdminRequests } from "../services/users.service.js";
 
 export const getAdminRequests = async (_req: Request, res: Response): Promise<void> => {
   const users = await listPendingAdminRequests();

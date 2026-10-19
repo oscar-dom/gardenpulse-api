@@ -11,7 +11,7 @@ import {
   getSensorById,
   listSensors,
   updateSensor,
-} from "../services/sensor.service.js";
+} from "../services/sensors.service.js";
 
 export const getSensors = async (req: Request, res: Response): Promise<void> => {
   const { sensors, meta } = await listSensors(req.query as unknown as ListSensorsQuery);
