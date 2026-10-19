@@ -112,9 +112,9 @@ extension and click **Send Request** above each request. Set `@adminEmail` and
 ### A typical flow
 
 1. **Sign up** (`POST /api/auth/register`). New accounts are always `user`. Add
-   `"requestAdmin": true` to ask for the admin role.
-2. **Log in** (`POST /api/auth/login`) and send the token as
-   `Authorization: Bearer <token>` from then on.
+   `"requestAdmin": true` to ask for the admin role. The response already has a token.
+2. **Log in** (`POST /api/auth/login`) when the token expires, and send it as
+   `Authorization: Bearer <token>` on every request.
 3. An **admin** reviews requests (`GET /api/users/admin-requests`,
    `PATCH /api/users/:id/admin-request`) and manages sensors (`POST`, `PATCH`,
    `DELETE /api/sensors`).

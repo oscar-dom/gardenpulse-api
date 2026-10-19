@@ -31,7 +31,7 @@ Content-Type: application/json
 
 ### ===================== Sign up and log in =====================
 
-### Register a user → 201 (a second run → 409 EmailAlreadyRegistered)
+### Register a user → 201 with a token (a second run → 409 EmailAlreadyRegistered)
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
