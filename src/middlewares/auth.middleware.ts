@@ -9,7 +9,7 @@ import { verifyToken } from "../services/token.service.js";
  * 401 when the request does not prove who the user is: no token, a forged or expired
  * one, or a user that no longer exists. Otherwise loads the user into `req.user`.
  */
-export const authenticate = async (
+export const authenticateToken = async (
   req: Request,
   _res: Response,
   next: NextFunction,
@@ -38,9 +38,9 @@ export const authenticate = async (
 };
 
 /**
- * 403 when the user is known but their role is not allowed. Use after `authenticate`.
+ * 403 when the user is known but their role is not allowed. Use after `authenticateToken`.
  */
-export const authorize =
+export const authorizeRoles =
   (...roles: UserRole[]) =>
   (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) throw new AppError("Authentication required. Send a Bearer token.", 401);

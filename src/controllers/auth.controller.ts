@@ -12,7 +12,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   res.status(200).json({ status: "success", data: { token, user } });
 };
 
-// Only reached through `authenticate`, which guarantees `req.user`.
+// Only reached through `authenticateToken`, which guarantees `req.user`.
 export const me = (req: Request, res: Response): void => {
   res.status(200).json({ status: "success", data: { user: req.user } });
 };

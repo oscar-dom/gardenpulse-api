@@ -1,6 +1,6 @@
 import type { UserDocument } from "../models/user.model.js";
 
-// The authenticate middleware attaches the logged-in user to the request.
+// The authenticateToken middleware attaches the logged-in user to the request.
 declare global {
   namespace Express {
     interface Request {

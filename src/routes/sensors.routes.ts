@@ -7,8 +7,8 @@ import {
   postSensor,
   removeSensor,
 } from "../controllers/sensors.controller.js";
-import { authenticate, authorize } from "../middlewares/auth.middleware.js";
-import { validate } from "../middlewares/validate.middleware.js";
+import { authenticateToken, authorizeRoles } from "../middlewares/auth.middleware.js";
+import { validateBody, validateParams, validateQuery } from "../middlewares/validate.middleware.js";
 import { idParamsSchema } from "../schemas/common.schema.js";
 import { createReadingSchema } from "../schemas/reading.schema.js";
 import {
@@ -21,31 +21,34 @@ import {
 export const sensorsRouter = Router();
 
 // No sensor operation is available without a token.
-sensorsRouter.use(authenticate);
+sensorsRouter.use(authenticateToken);
 
 // Reading the catalog: any authenticated user.
-sensorsRouter.get("/", validate({ query: listSensorsQuerySchema }), getSensors);
-sensorsRouter.get("/:id", validate({ params: idParamsSchema }), getSensor);
+sensorsRouter.get("/", validateQuery(listSensorsQuerySchema), getSensors);
+sensorsRouter.get("/:id", validateParams(idParamsSchema), getSensor);
 
 // Recording a reading of a sensor: any authenticated user. Nested under the sensor
 // so an unknown sensor is a plain 404 on the URL.
 sensorsRouter.post(
   "/:id/readings",
-  validate({ params: idParamsSchema, body: createReadingSchema }),
+  validateParams(idParamsSchema),
+  validateBody(createReadingSchema),
   postReading,
 );
 
 // Managing the catalog: admins only (403 for regular users).
-sensorsRouter.post("/", authorize("admin"), validate({ body: createSensorSchema }), postSensor);
+sensorsRouter.post("/", authorizeRoles("admin"), validateBody(createSensorSchema), postSensor);
 sensorsRouter.patch(
   "/:id",
-  authorize("admin"),
-  validate({ params: idParamsSchema, body: updateSensorSchema }),
+  authorizeRoles("admin"),
+  validateParams(idParamsSchema),
+  validateBody(updateSensorSchema),
   patchSensor,
 );
 sensorsRouter.delete(
   "/:id",
-  authorize("admin"),
-  validate({ params: idParamsSchema, query: deleteSensorQuerySchema }),
+  authorizeRoles("admin"),
+  validateParams(idParamsSchema),
+  validateQuery(deleteSensorQuerySchema),
   removeSensor,
 );
