@@ -31,7 +31,7 @@ Content-Type: application/json
 
 ### ===================== Sign up and log in =====================
 
-### Register a user → 201 (a second run → 409 Conflict)
+### Register a user → 201 (a second run → 409 EmailAlreadyRegistered)
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
@@ -73,7 +73,7 @@ Content-Type: application/json
 
 @token = {{login.response.body.$.data.token}}
 
-### Log in with a wrong password → 401 Unauthorized
+### Log in with a wrong password → 401 InvalidCredentials
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 

@@ -128,6 +128,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "fail",
+                  "error": "EmailAlreadyRegistered",
+                  "message": "Email is already registered."
                 }
               }
             }
@@ -199,7 +204,7 @@
                 },
                 "example": {
                   "status": "fail",
-                  "error": "Unauthorized",
+                  "error": "InvalidCredentials",
                   "message": "Invalid email or password."
                 }
               }
@@ -1410,16 +1415,29 @@
         }
       },
       "Unauthorized": {
-        "description": "Not identified: missing, invalid or expired token.",
+        "description": "Not identified. `Unauthorized` when the Bearer token is missing; `InvalidToken` when it is forged, expired or its user no longer exists.",
         "content": {
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
             },
-            "example": {
-              "status": "fail",
-              "error": "Unauthorized",
-              "message": "Authentication required. Send a Bearer token."
+            "examples": {
+              "missingToken": {
+                "summary": "No Bearer token",
+                "value": {
+                  "status": "fail",
+                  "error": "Unauthorized",
+                  "message": "Authentication required. Send a Bearer token."
+                }
+              },
+              "invalidToken": {
+                "summary": "Forged or expired token",
+                "value": {
+                  "status": "fail",
+                  "error": "InvalidToken",
+                  "message": "The token is not valid."
+                }
+              }
             }
           }
         }

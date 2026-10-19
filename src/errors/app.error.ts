@@ -13,14 +13,18 @@ const ERROR_NAMES: Record<number, string> = {
  */
 export class AppError extends Error {
   public readonly statusCode: number;
+  // Operational errors are expected situations (bad input, missing resource), not bugs.
+  public readonly isOperational: boolean;
 
-  constructor(message: string, statusCode = 400) {
+  constructor(message: string, statusCode = 400, isOperational = true) {
     super(message);
     this.statusCode = statusCode;
+    this.isOperational = isOperational;
     this.name = ERROR_NAMES[statusCode] ?? "Error";
 
     // Keeps `instanceof AppError` reliable for subclasses.
     Object.setPrototypeOf(this, new.target.prototype);
+    Error.captureStackTrace(this, this.constructor);
   }
 }
 

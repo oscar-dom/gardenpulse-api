@@ -203,7 +203,7 @@ src/
 ├── server.ts       # connects to MongoDB and starts the server
 ├── seed-admin.ts   # creates the first admin (npm run seed:admin)
 ├── config/         # environment variables, database connection and logger
-├── errors/         # application error class
+├── errors/         # AppError and the authentication error classes
 ├── schemas/        # Zod input validation schemas
 ├── middlewares/    # authentication, authorization, validation, rate limit, errors
 ├── docs/           # OpenAPI specification (openapi.json, served at /api/docs)
