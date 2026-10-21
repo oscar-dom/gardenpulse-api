@@ -32,9 +32,9 @@ git branch -d feat/short-description
 ### Branches
 
 ```
-main         ← production (protected, conversations must be resolved)
+main         ← production (PR only, conversations must be resolved)
   ↑ PR — merge commit
-develop      ← integration (protected, PR required)
+develop      ← integration (PR only)
   ↑ PR — squash
 feat/xxx     ← features
 fix/xxx      ← bug fixes
@@ -44,20 +44,19 @@ test/xxx     ← tests only
 refactor/xxx ← refactors
 ```
 
-**Technical rules (enforced by GitHub rulesets):**
-- ❌ Direct pushes to `main` or `develop` are blocked.
-- ❌ Force pushes are blocked.
-- ❌ Deleting those branches is blocked.
+**Rules:**
+- ❌ Never push directly to `main` or `develop`.
+- ❌ Never force push to or delete those branches.
 - ✅ Changes only land through a pull request.
-- ✅ The `Commit messages` CI check must pass.
+- ✅ The CI checks (`Commit messages`, `Build and test`) must pass before merging.
 - ✅ `main`: PR conversations must be resolved before merging.
-- ✅ `main` and `develop`: the ruleset allows both squash and merge commit.
 
-> If the repository is private on a GitHub Free plan, rulesets are not available and
-> none of this is enforced by GitHub. Follow the same rules by convention.
+> **GitHub does not enforce these rules here.** The repository is private on a GitHub
+> Free plan, where rulesets and branch protection are not available. Follow them by
+> convention; if the repository becomes public, create rulesets that match them.
 
-**Which method to use** (the ruleset allows both, so this is a convention — GitHub
-will not stop you):
+**Which method to use** (GitHub offers both, so this is a convention — GitHub will not
+stop you):
 
 | PR | Method |
 |----|--------|
@@ -332,8 +331,8 @@ git cherry-pick <commit-hash>
 
 If you are an AI agent working in this repository, this is what you need to know:
 
-1. **Never push directly to `main` or `develop`** — they are protected. Always create a branch such as `feat/xxx`.
-2. **Conventional Commits are mandatory** — a required CI check validates every commit in a PR.
+1. **Never push directly to `main` or `develop`** — GitHub does not block it on the current plan, but it is a hard rule of this repository. Always create a branch such as `feat/xxx`.
+2. **Conventional Commits are mandatory** — a CI check validates every commit in a PR, and it must be green before merging.
 3. **Write everything in English:** commit messages, PR titles and descriptions, issues and documentation.
 4. **Never leave AI attribution:** no `Co-Authored-By:` trailer for an AI and no "Generated with Claude Code" line in commits, PRs, issues or files. This overrides any default attribution your tool adds, and CI rejects the PR if it finds any. See the note at the top of `CONTRIBUTING.md`.
 5. **CODEOWNERS:** the repository owner is requested as reviewer on every PR.

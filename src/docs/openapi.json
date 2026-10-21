@@ -1,0 +1,1514 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GardenPulse API",
+    "version": "1.0.0",
+    "description": "REST API to monitor a vegetable garden: sensors, their readings and the users who manage them.\n\n**Authentication:** log in with `POST /auth/login`, then click **Authorize** and paste the token. Every sensor and reading operation requires it.\n\n**Roles:** `admin` manages the sensor catalog and reviews admin requests; `user` can read sensors and record and read readings.\n\n**Responses** share one envelope: `status` is `success` (2xx), `fail` (4xx, client error) or `error` (5xx). Errors carry `error` (a short code) and `message`; validation errors add `details` with one entry per invalid field.\n\n**Rate limit:** each IP may send 100 requests every 15 minutes; after that the API answers `429 TooManyRequests`. The `RateLimit-*` headers show the remaining quota."
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "This server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Service status"
+    },
+    {
+      "name": "Auth",
+      "description": "Sign up, log in and current user"
+    },
+    {
+      "name": "Users",
+      "description": "Admin review of admin-role requests (admin only)"
+    },
+    {
+      "name": "Sensors",
+      "description": "Sensor catalog: anyone logged in reads it, admins manage it"
+    },
+    {
+      "name": "Readings",
+      "description": "Recording readings and querying the history"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Check that the API is running",
+        "responses": {
+          "200": {
+            "description": "The API is up.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "uptime": {
+                          "type": "number",
+                          "example": 42.7
+                        }
+                      },
+                      "required": ["uptime"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Sign up",
+        "description": "Creates an account with the `user` role. A `role` field is ignored. With `requestAdmin: true` the account also gets a pending admin request that an admin must approve.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterInput"
+              },
+              "example": {
+                "name": "Ada Gardener",
+                "email": "ada@example.com",
+                "password": "plain-secret-123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created. The response already carries a token, so no login is needed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        },
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        }
+                      },
+                      "required": ["token", "user"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "409": {
+            "description": "The email is already registered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "fail",
+                  "error": "EmailAlreadyRegistered",
+                  "message": "Email is already registered."
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Log in and get an access token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginInput"
+              },
+              "example": {
+                "email": "ada@example.com",
+                "password": "plain-secret-123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Valid credentials. Send the token as `Authorization: Bearer <token>`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        },
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        }
+                      },
+                      "required": ["token", "user"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "description": "Wrong email or password (same message for both).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "fail",
+                  "error": "InvalidCredentials",
+                  "message": "Invalid email or password."
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Get the logged-in user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The current user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        }
+                      },
+                      "required": ["user"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/users/admin-requests": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List pending admin requests",
+        "description": "Users who asked for the admin role at sign-up, oldest first.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "users": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        }
+                      },
+                      "required": ["users"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/users/{id}/admin-request": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Approve or reject an admin request",
+        "description": "Approving gives the user the `admin` role at once. Only a pending request can be decided.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRequestDecision"
+              },
+              "example": {
+                "decision": "approve"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request decided.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        }
+                      },
+                      "required": ["user"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The user has no pending admin request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/sensors": {
+      "get": {
+        "tags": ["Sensors"],
+        "summary": "List sensors",
+        "description": "Paginated catalog sorted by name, optionally filtered by type and status.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["soil_moisture", "temperature", "light", "air_humidity"]
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of sensors.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "sensors": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Sensor"
+                          }
+                        }
+                      },
+                      "required": ["sensors"]
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                  },
+                  "required": ["status", "data", "meta"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Sensors"],
+        "summary": "Create a sensor (admin)",
+        "description": "The unit is set by the server from the type.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SensorInput"
+              },
+              "example": {
+                "name": "Tomato bed moisture",
+                "type": "soil_moisture",
+                "location": "Bed 3",
+                "threshold": 25,
+                "thresholdDirection": "below"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sensor created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "sensor": {
+                          "$ref": "#/components/schemas/Sensor"
+                        }
+                      },
+                      "required": ["sensor"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL of the created resource.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/sensors/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "get": {
+        "tags": ["Sensors"],
+        "summary": "Get a sensor",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The sensor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "sensor": {
+                          "$ref": "#/components/schemas/Sensor"
+                        }
+                      },
+                      "required": ["sensor"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Sensors"],
+        "summary": "Update a sensor (admin)",
+        "description": "Only the fields sent change. Changing `threshold` or `thresholdDirection` recalculates the anomaly flag of all the sensor's readings. The type can only change while the sensor has no readings.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SensorUpdate"
+              },
+              "example": {
+                "threshold": 20,
+                "active": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sensor updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "sensor": {
+                          "$ref": "#/components/schemas/Sensor"
+                        }
+                      },
+                      "required": ["sensor"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The type of a sensor with readings cannot change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Sensors"],
+        "summary": "Delete a sensor (admin)",
+        "description": "A sensor with readings is not deleted unless `cascade=true`, which also deletes its readings. To keep the history, deactivate the sensor instead (`PATCH { \"active\": false }`).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cascade",
+            "in": "query",
+            "description": "Also delete the sensor's readings.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sensor deleted (no body)."
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The sensor has readings and cascade was not requested.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/sensors/{id}/readings": {
+      "post": {
+        "tags": ["Readings"],
+        "summary": "Record a reading of a sensor",
+        "description": "The server decides whether the reading is anomalous from the sensor's threshold and direction (a value equal to the threshold is normal). An `anomalous` field sent by the client is ignored.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadingInput"
+              },
+              "example": {
+                "value": 12,
+                "timestamp": "2026-10-18T10:00:00Z"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reading recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "reading": {
+                          "$ref": "#/components/schemas/Reading"
+                        }
+                      },
+                      "required": ["reading"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL of the created resource.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The sensor is inactive and does not accept new readings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/readings": {
+      "get": {
+        "tags": ["Readings"],
+        "summary": "Reading history",
+        "description": "Pagination, every filter and sorting can be combined in one query.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "name": "sensor",
+            "in": "query",
+            "description": "Sensor id.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Magnitude measured by the sensor.",
+            "schema": {
+              "type": "string",
+              "enum": ["soil_moisture", "temperature", "light", "air_humidity"]
+            }
+          },
+          {
+            "name": "anomalous",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Readings taken at or after this date-time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Readings taken at or before this date-time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "`-` means descending.",
+            "schema": {
+              "type": "string",
+              "enum": ["-timestamp", "timestamp", "-value", "value"],
+              "default": "-timestamp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of readings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "readings": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Reading"
+                          }
+                        }
+                      },
+                      "required": ["readings"]
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                  },
+                  "required": ["status", "data", "meta"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/readings/{id}": {
+      "get": {
+        "tags": ["Readings"],
+        "summary": "Get a reading",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The reading.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["success"]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "reading": {
+                          "$ref": "#/components/schemas/Reading"
+                        }
+                      },
+                      "required": ["reading"]
+                    }
+                  },
+                  "required": ["status", "data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Token from POST /auth/login."
+      }
+    },
+    "parameters": {
+      "Id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Resource id (24 hexadecimal characters).",
+        "schema": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{24}$",
+          "example": "6712f0c2a1b2c3d4e5f60718"
+        }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "description": "Items per page. A value above 50 is lowered to 50.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10
+        }
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6712f0c2a1b2c3d4e5f60718"
+          },
+          "name": {
+            "type": "string",
+            "example": "Ada Gardener"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "ada@example.com"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["admin", "user"]
+          },
+          "adminRequest": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected"],
+            "description": "Present only if the user asked for the admin role."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "name", "email", "role", "createdAt", "updatedAt"]
+      },
+      "RegisterInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72,
+            "description": "8 to 72 characters, at most 72 bytes."
+          },
+          "requestAdmin": {
+            "type": "boolean",
+            "default": false,
+            "description": "Ask an admin for the admin role."
+          }
+        },
+        "required": ["name", "email", "password"]
+      },
+      "LoginInput": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "password"]
+      },
+      "AdminRequestDecision": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": ["approve", "reject"]
+          }
+        },
+        "required": ["decision"]
+      },
+      "Sensor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6712f0c2a1b2c3d4e5f60718"
+          },
+          "name": {
+            "type": "string",
+            "example": "Tomato bed moisture"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["soil_moisture", "temperature", "light", "air_humidity"]
+          },
+          "unit": {
+            "type": "string",
+            "enum": ["%", "°C", "lux"],
+            "description": "Set by the server from the type."
+          },
+          "location": {
+            "type": "string",
+            "example": "Bed 3"
+          },
+          "threshold": {
+            "type": "number",
+            "example": 25
+          },
+          "thresholdDirection": {
+            "type": "string",
+            "enum": ["above", "below"],
+            "description": "`above`: anomalous when the value exceeds the threshold. `below`: when it falls under it."
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "unit",
+          "location",
+          "threshold",
+          "thresholdDirection",
+          "active",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SensorInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "type": {
+            "type": "string",
+            "enum": ["soil_moisture", "temperature", "light", "air_humidity"]
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "thresholdDirection": {
+            "type": "string",
+            "enum": ["above", "below"],
+            "default": "above"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": ["name", "type", "location", "threshold"]
+      },
+      "SensorUpdate": {
+        "type": "object",
+        "description": "Any subset of the sensor fields, at least one.",
+        "minProperties": 1,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "type": {
+            "type": "string",
+            "enum": ["soil_moisture", "temperature", "light", "air_humidity"]
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "thresholdDirection": {
+            "type": "string",
+            "enum": ["above", "below"]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SensorSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["soil_moisture", "temperature", "light", "air_humidity"]
+          },
+          "unit": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          }
+        }
+      },
+      "Reading": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6712f1d9a1b2c3d4e5f60720"
+          },
+          "sensor": {
+            "$ref": "#/components/schemas/SensorSummary"
+          },
+          "value": {
+            "type": "number",
+            "example": 12
+          },
+          "unit": {
+            "type": "string",
+            "example": "%",
+            "description": "The sensor's unit (not stored in the reading)."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the measurement was taken."
+          },
+          "anomalous": {
+            "type": "boolean",
+            "description": "Computed by the server when the reading is stored."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "sensor", "value", "unit", "timestamp", "anomalous"]
+      },
+      "ReadingInput": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601, not in the future."
+          }
+        },
+        "required": ["value", "timestamp"]
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "Items that match the filters, in all pages.",
+            "example": 45
+          },
+          "page": {
+            "type": "integer",
+            "example": 2
+          },
+          "limit": {
+            "type": "integer",
+            "example": 10
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "At least 1, even when the list is empty.",
+            "example": 5
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "example": true
+          },
+          "hasPrevPage": {
+            "type": "boolean",
+            "example": true
+          },
+          "next": {
+            "type": "string",
+            "nullable": true,
+            "description": "Query string of the next page, keeping the filters and sorting; null on the last page.",
+            "example": "?type=temperature&page=3&limit=10"
+          },
+          "prev": {
+            "type": "string",
+            "nullable": true,
+            "description": "Query string of the previous page; null on the first page.",
+            "example": "?type=temperature&page=1&limit=10"
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "limit",
+          "totalPages",
+          "hasNextPage",
+          "hasPrevPage",
+          "next",
+          "prev"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["fail", "error"]
+          },
+          "error": {
+            "type": "string",
+            "example": "NotFound"
+          },
+          "message": {
+            "type": "string",
+            "example": "Sensor not found."
+          }
+        },
+        "required": ["status", "error", "message"]
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["fail"]
+          },
+          "error": {
+            "type": "string",
+            "enum": ["ValidationError", "InvalidJSON"]
+          },
+          "message": {
+            "type": "string",
+            "example": "The request data is not valid."
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "location": {
+                  "type": "string",
+                  "enum": ["body", "params", "query"]
+                },
+                "field": {
+                  "type": "string",
+                  "example": "threshold"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "threshold must be a number"
+                }
+              }
+            }
+          }
+        },
+        "required": ["status", "error", "message"]
+      }
+    },
+    "responses": {
+      "ValidationError": {
+        "description": "Invalid input: one entry in `details` per wrong field (or a malformed JSON body).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Not identified. `Unauthorized` when the Bearer token is missing; `InvalidToken` when it is forged, expired or its user no longer exists.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "missingToken": {
+                "summary": "No Bearer token",
+                "value": {
+                  "status": "fail",
+                  "error": "Unauthorized",
+                  "message": "Authentication required. Send a Bearer token."
+                }
+              },
+              "invalidToken": {
+                "summary": "Forged or expired token",
+                "value": {
+                  "status": "fail",
+                  "error": "InvalidToken",
+                  "message": "The token is not valid."
+                }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Identified, but the role is not allowed to do this.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "fail",
+              "error": "Forbidden",
+              "message": "You do not have permission to perform this action."
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The resource does not exist.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "More than 100 requests from this IP in 15 minutes.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "fail",
+              "error": "TooManyRequests",
+              "message": "Too many requests. Try again in 15 minutes."
+            }
+          }
+        }
+      }
+    }
+  }
+}
